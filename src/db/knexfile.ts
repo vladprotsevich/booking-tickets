@@ -1,19 +1,22 @@
 import knex from 'knex';
-import { configuration } from '../config';
+import * as dotenv from 'dotenv';
 
-const dbConf = {
+dotenv.config();
+
+export const dbConf = knex({
   client: 'pg',
-  connection: configuration.connection,
-  migrations: configuration.migrations,
+  connection: {
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    port: Number(process.env.DB_PORT),
+  },
   useNullAsDefault: true,
-};
-
-export const db = knex(dbConf);
-
-export default dbConf;
+});
 
 export async function migrate(): Promise<void> {
-  await db.migrate.latest({
+  await dbConf.migrate.latest({
     directory: __dirname + '/migrations',
     loadExtensions: ['.js'],
   });
