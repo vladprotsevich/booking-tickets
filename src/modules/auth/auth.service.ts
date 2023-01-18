@@ -16,9 +16,9 @@ export class AuthService {
   async register(body: SignUpDTO): Promise<SignUpDTO> {
     const isUserExist = await this.UsersService.isUserExist(body);
     if (isUserExist) throw new BadRequestException();
-    const usersBody = await this.initializeUsersBody(body);
-    await this.UsersService.createUser(usersBody);
-    return usersBody;
+    body.password = await this.encryptUserPassword(body.password);
+    await this.UsersService.createUser(body);
+    return body;
   }
 
   async login(body: SingInDTO) {
@@ -51,16 +51,6 @@ export class AuthService {
   async parseJwtToken(token: string) {
     const decoded_token = Buffer.from(token.split('.')[1], 'base64').toString();
     return await JSON.parse(decoded_token);
-  }
-
-  async initializeUsersBody(body: SignUpDTO): Promise<SignUpDTO> {
-    body.password = await this.encryptUserPassword(body.password);
-    body.token = await this.TokenService.generateJwtToken(
-      body,
-      'refresh_token',
-      '24h',
-    );
-    return body;
   }
 
   async generateAuthJwtAccessToken(user: UserDTO) {

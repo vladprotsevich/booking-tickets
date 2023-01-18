@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
 import { JWTStrategy } from 'src/strategy/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -12,14 +10,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.development.env' });
 
 @Module({
-  imports: [
-    UsersModule,
-    TokenModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET_ACCESS_KEY,
-    }),
-  ],
+  imports: [UsersModule, TokenModule],
   controllers: [AuthController],
   providers: [AuthService, JWTStrategy],
   exports: [AuthService, UsersModule],
