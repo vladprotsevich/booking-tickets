@@ -3,36 +3,41 @@ import { UsersService } from '../users/users.service';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { SingInDTO } from './dto/sign-in.dto';
 import { UserDTO } from '../users/dto/user.dto';
-import { TokenService } from '../token/token.service';
+import { TokenService } from './token.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly UsersService: UsersService,
-    private readonly TokenService: TokenService,
+    private readonly usersService: UsersService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async register(body: SignUpDTO): Promise<SignUpDTO> {
-    const isUserExist = await this.UsersService.isUserExist(body);
+    const isUserExist = await this.usersService.isUserExist(body);
     if (isUserExist) throw new BadRequestException();
     body.password = await this.encryptUserPassword(body.password);
-    await this.UsersService.createUser(body);
-    return body;
+    await this.usersService.createUser(body);
+    const user = await this.usersService.sanitizeUser(body);
+    return { ...user };
   }
 
   async login(body: SingInDTO) {
-    const user: UserDTO = await this.UsersService.findUserByEmail(body.email);
+    const user: UserDTO = await this.usersService.findUserByEmail(body.email);
     if (user && (await this.decryptUserPassword(body.password, user))) {
       const access_token = await this.generateAuthJwtAccessToken(user);
       const refresh_token = await this.generateAuthJwtRefreshToken(user);
 
-      await this.UsersService.updateUserById(user.id, 'token', refresh_token);
+      await this.usersService.updateUserById(user.id, 'token', refresh_token);
 
       return {
         message: `Welcome ${user.email}`,
-        access_token: access_token,
-        refresh_token: refresh_token,
+        access_token,
+        refresh_token,
+      };
+    } else {
+      return {
+        message: `${body.email} is not registered yet`,
       };
     }
   }
@@ -54,11 +59,11 @@ export class AuthService {
   }
 
   async generateAuthJwtAccessToken(user: UserDTO) {
-    return await this.TokenService.generateJwtToken(user, 'access_token', '1h');
+    return await this.tokenService.generateJwtToken(user, 'access_token', '1h');
   }
 
   async generateAuthJwtRefreshToken(user: UserDTO) {
-    return await this.TokenService.generateJwtToken(
+    return await this.tokenService.generateJwtToken(
       user,
       'refresh_token',
       '24h',

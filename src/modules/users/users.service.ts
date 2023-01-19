@@ -36,4 +36,14 @@ export class UsersService {
 
     return userById || userByEmail;
   }
+
+  async sanitizeUser(body: any) {
+    body.password = null;
+    body.token = null;
+    body = Object.entries(body).reduce(
+      (a, [k, v]) => (v == null ? a : ((a[k] = v), a)),
+      {},
+    );
+    return body;
+  }
 }

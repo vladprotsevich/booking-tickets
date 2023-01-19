@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { UserDTO } from '../users/dto/user.dto';
 import { ConfigService } from '@nestjs/config';
-import { SingInDTO } from '../auth/dto/sign-in.dto';
+import { SingInDTO } from './dto/sign-in.dto';
 
 @Injectable()
 export class TokenService {
@@ -41,9 +41,7 @@ export class TokenService {
         'access_token',
         '1h',
       );
-      return {
-        access_token: access_token,
-      };
+      return { access_token };
     }
   }
 
