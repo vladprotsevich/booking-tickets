@@ -13,7 +13,7 @@ dotenv.config({ path: '.development.env' });
 @Module({
   imports: [UsersModule],
   controllers: [AuthController],
-  providers: [AuthService, JWTStrategy, TokenService, JwtService],
-  exports: [AuthService, UsersModule],
+  providers: [AuthService, TokenService, JWTStrategy, JwtService],
+  exports: [AuthService, TokenService],
 })
 export class AuthModule {}
