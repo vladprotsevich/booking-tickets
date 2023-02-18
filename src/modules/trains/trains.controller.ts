@@ -27,10 +27,8 @@ export class TrainsController {
     return { train };
   }
 
-  @Get('/:uuid/schedule')
-  async trainsSchedule(
-    @Param('uuid', new ParseUUIDPipe({ version: '4' })) uuid: string,
-  ) {
-    return await this.trainsService.getSchedule(uuid);
+  @Get('/:number/schedule')
+  async trainsSchedule(@Param('number') train_number: string) {
+    return await this.trainsService.getSchedule(train_number);
   }
 }

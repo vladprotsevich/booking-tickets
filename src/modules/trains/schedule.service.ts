@@ -1,5 +1,4 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { dbConf } from 'src/db/knexfile';
 import { ArrivalsService } from '../arrivals/arrivals.service';
 import { TrainsService } from './trains.service';
 
@@ -11,9 +10,9 @@ export class SchedulesService {
     private readonly arrivalsService: ArrivalsService,
   ) {}
 
-  async getSchedule(id: string) {
-    const train = await this.trainsService.findOne({ id });
-    const arrivals = await this.arrivalsService.getRoutesArrivalsInfo(
+  async getSchedule(train_number: string) {
+    const train = await this.trainsService.findOne({ number: train_number });
+    const arrivals = await this.arrivalsService.getRoutesArrivalsCollection(
       train.route_id,
     );
 
@@ -21,13 +20,13 @@ export class SchedulesService {
 
     const travelTimeSequence = [train.departure_time];
     for (let i = 0; i < arrivals.length - 1; i++) {
-      let nextStationArrivalTime = this.getTravelTime([
+      let nextStationArrivalTime = this.getTotalTravelTime([
         travelTimeSequence[i],
         arrivals[i + 1].travel_time,
         arrivals[i].stop_time,
       ]);
 
-      const departureTimeWithStopTime = this.getTravelTime([
+      const departureTime = this.getTotalTravelTime([
         travelTimeSequence[i],
         arrivals[i].stop_time,
       ]);
@@ -35,18 +34,18 @@ export class SchedulesService {
       travelTimeSequence.push(nextStationArrivalTime);
 
       schedulesSubRoutes.push({
-        departure_station: arrivals[i].station_id,
-        arrival_station: arrivals[i + 1].station_id,
-        departure_time: departureTimeWithStopTime,
-        arrival_time: travelTimeSequence[i + 1],
-        stop_time: arrivals[i].stop_time,
+        departureStation: arrivals[i].station_id,
+        arrivalStation: arrivals[i + 1].station_id,
+        departureTime,
+        arrivalTime: travelTimeSequence[i + 1],
+        stopTime: arrivals[i].stop_time,
       });
     }
 
     return schedulesSubRoutes;
   }
 
-  getTravelTime(times: string[]) {
+  getTotalTravelTime(times: string[]) {
     let totalTime = 0;
     times.forEach((time) => {
       totalTime += this.convertTimeToMilliseconds(time);

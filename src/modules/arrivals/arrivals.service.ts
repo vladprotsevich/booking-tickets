@@ -3,7 +3,7 @@ import { dbConf } from 'src/db/knexfile';
 
 @Injectable()
 export class ArrivalsService {
-  async getRoutesArrivalsInfo(route_uuid: string) {
+  async getRoutesArrivalsCollection(route_uuid: string) {
     return dbConf
       .select('*')
       .from('arrivals')
@@ -11,7 +11,10 @@ export class ArrivalsService {
       .orderBy('consistency_number', 'asc');
   }
 
-  async getArrivalTime(train_uuid: string, consistencyNumber: number) {
+  async getJourneyTimeCollection(
+    train_uuid: string,
+    consistencyNumber: number,
+  ) {
     return dbConf
       .select('station_id', 'travel_time', 'stop_time')
       .from('arrivals')
@@ -25,14 +28,9 @@ export class ArrivalsService {
       .andWhereBetween('arrivals.consistency_number', [1, consistencyNumber]);
   }
 
-  async getConsistencyNumOfStation(
-    train_uuid: string,
-    station_uuid: string,
-    isLast?: boolean,
-  ) {
-    // returns the consistency num of station in for specific trains route which u passed in params
-    const consistencyNumber = dbConf
-      .select('consistency_number')
+  async getConsistencyNumOfStation(train_uuid: string) {
+    return dbConf
+      .select('consistency_number', 'station_id')
       .from('arrivals')
       .innerJoin('routes', function () {
         this.on('routes.id', '=', 'arrivals.route_id');
@@ -40,11 +38,21 @@ export class ArrivalsService {
       .innerJoin('trains', function () {
         this.on('routes.id', '=', 'trains.route_id');
       })
-      .andWhere('trains.id', '=', train_uuid);
-    return isLast
-      ? consistencyNumber.orderBy('consistency_number', 'desc').first()
-      : consistencyNumber
-          .andWhere('arrivals.station_id', '=', station_uuid)
-          .first();
+      .andWhere('trains.id', '=', train_uuid)
+      .orderBy('consistency_number', 'asc');
+  }
+
+  async getLastOrderNumberOfStation(train_uuid: string, station_uuid: string) {
+    const arrivals = await this.getConsistencyNumOfStation(train_uuid);
+    return arrivals[arrivals.length - 1].consistency_number;
+  }
+
+  async getCurrentOrderNumberOfStation(
+    train_uuid: string,
+    station_uuid: string,
+  ) {
+    const arrivals = await this.getConsistencyNumOfStation(train_uuid);
+    return arrivals.filter((arrival) => arrival.station_id === station_uuid)[0]
+      .consistency_number;
   }
 }

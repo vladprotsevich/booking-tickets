@@ -5,8 +5,11 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').defaultTo(knex.raw('uuid_generate_v4()'));
     table.uuid('route_id').references('id').inTable('routes');
     table.uuid('station_id').references('id').inTable('stations');
-    table.dateTime('departure_time').notNullable();
-    table.dateTime('arrival_time').notNullable();
+    table.integer('consistency_number').notNullable();
+    table.time('travel_time').notNullable();
+    table.time('stop_time').notNullable();
+    table.unique(['route_id', 'station_id']);
+    table.unique(['route_id', 'consistency_number']);
   });
 }
 

@@ -105,8 +105,8 @@ export class TrainsService {
       .whereIn('trains_frequencies.frequency', [...statements, 'daily']);
   }
 
-  async getSchedule(uuid: string) {
-    return this.scheduleService.getSchedule(uuid);
+  async getSchedule(train_number: string) {
+    return this.scheduleService.getSchedule(train_number);
   }
 
   async getDayOfWeek(inputDate: any) {

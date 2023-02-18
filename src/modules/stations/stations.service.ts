@@ -5,6 +5,7 @@ import { DatabaseService } from '../database/database.service';
 import { SchedulesService } from '../trains/schedule.service';
 import { TrainsService } from '../trains/trains.service';
 import { CreateStationDTO } from './dto/create.station.dto';
+import { JourneyDTO } from './dto/journey.dto';
 import { StationDTO } from './dto/station.dto';
 import { StationScheduleDTO } from './dto/station.schedule.dto';
 
@@ -34,33 +35,28 @@ export class StationsService {
     const schedule = [];
 
     for (let i = 0; i < trains.length; i++) {
-      const departureTime = trains[i].departure_time;
-      const lastArrivalStationTime = await this.getArrivalStationTime(
-        departureTime,
+      const FirstDepartureStationTime = trains[i].departure_time;
+      const lastStationArrivalTime = await this.getLastStationTime(
+        FirstDepartureStationTime,
         trains[i].id,
         station_uuid,
-        true,
-        false,
       );
-      const currentArrivalStationTime = await this.getArrivalStationTime(
-        departureTime,
+      const currentStationArrivalTime = await this.getCurrentStationTime(
+        FirstDepartureStationTime,
         trains[i].id,
         station_uuid,
-        false,
-        true,
       );
-      const currentDepartureStationTime = await this.getArrivalStationTime(
-        departureTime,
-        trains[i].id,
-        station_uuid,
-        false,
-        false,
-      );
-      let scheduleObject = {
+      const currentDepartureStationTime =
+        await this.getDepartureFromCurrentStationTime(
+          FirstDepartureStationTime,
+          trains[i].id,
+          station_uuid,
+        );
+      const scheduleObject = {
         train_id: trains[i].id,
-        startStationDeparture: departureTime,
-        endStationArrival: lastArrivalStationTime,
-        arrivalToCurrentStation: currentArrivalStationTime,
+        startStationDeparture: FirstDepartureStationTime,
+        endStationArrival: lastStationArrivalTime,
+        arrivalToCurrentStation: currentStationArrivalTime,
         departureFromCurrentStation: currentDepartureStationTime,
       };
 
@@ -70,64 +66,93 @@ export class StationsService {
     return schedule;
   }
 
-  async getTravelCollectionTime(
+  async getLastStationTime(
+    initialDepartureTime: string,
     train_uuid: string,
     station_uuid: string,
-    isLast: boolean,
   ) {
-    const consistencyNumber =
-      await this.arrivalsService.getConsistencyNumOfStation(
+    const lastArrivalOrder =
+      await this.arrivalsService.getLastOrderNumberOfStation(
         train_uuid,
         station_uuid,
-        isLast,
       );
-
-    return this.arrivalsService.getArrivalTime(
-      train_uuid,
-      consistencyNumber.consistency_number,
+    const journeyTimeCollection =
+      await this.arrivalsService.getJourneyTimeCollection(
+        train_uuid,
+        lastArrivalOrder,
+      );
+    return this.calculateArrivalTime(
+      initialDepartureTime,
+      journeyTimeCollection,
     );
   }
 
-  async getArrivalStationTime(
-    departure_time: string,
+  async getCurrentStationTime(
+    initialDepartureTime: string,
     train_uuid: string,
     station_uuid: string,
-    isLast: boolean,
-    notCurrentStation: boolean,
   ) {
-    const travelCollection = await this.getTravelCollectionTime(
-      train_uuid,
-      station_uuid,
-      isLast,
+    const currenArrivalOrder =
+      await this.arrivalsService.getCurrentOrderNumberOfStation(
+        train_uuid,
+        station_uuid,
+      );
+    const journeyTimeCollection =
+      await this.arrivalsService.getJourneyTimeCollection(
+        train_uuid,
+        currenArrivalOrder,
+      );
+    journeyTimeCollection[journeyTimeCollection.length - 1].stop_time =
+      '00:00:00';
+    return this.calculateArrivalTime(
+      initialDepartureTime,
+      journeyTimeCollection,
     );
+  }
 
-    const travelTime = travelCollection.map((arrivals) => arrivals.travel_time);
-    const stopTime = notCurrentStation
-      ? travelCollection.map((arrivals) => arrivals.stop_time)
-      : travelCollection
-          .filter((travel) => travel.station_id != station_uuid)
-          .map((stop) => stop.stop_time);
+  async getDepartureFromCurrentStationTime(
+    initialDepartureTime: string,
+    train_uuid: string,
+    station_uuid: string,
+  ) {
+    const currenArrivalOrder =
+      await this.arrivalsService.getCurrentOrderNumberOfStation(
+        train_uuid,
+        station_uuid,
+      );
 
-    return this.scheduleService.getTravelTime([
-      ...travelTime,
-      ...stopTime,
-      departure_time,
+    const journeyTimeCollection =
+      await this.arrivalsService.getJourneyTimeCollection(
+        train_uuid,
+        currenArrivalOrder,
+      );
+    return this.calculateArrivalTime(
+      initialDepartureTime,
+      journeyTimeCollection,
+    );
+  }
+
+  async calculateArrivalTime(
+    initialDepartureTime: string,
+    journeyTimeCollection: JourneyDTO[],
+  ) {
+    const timeCollection = journeyTimeCollection
+      .map((travel) => [travel.travel_time, travel.stop_time])
+      .flat();
+    return this.scheduleService.getTotalTravelTime([
+      initialDepartureTime,
+      ...timeCollection,
     ]);
   }
 
-  async sanitizeSchedule(scheduleObject: StationScheduleDTO) {
-    if (
-      scheduleObject.endStationArrival ==
-      scheduleObject.departureFromCurrentStation
-    ) {
-      scheduleObject.departureFromCurrentStation = null;
-    } else if (
-      scheduleObject.arrivalToCurrentStation ===
-      scheduleObject.departureFromCurrentStation
-    ) {
-      scheduleObject.arrivalToCurrentStation = null;
-    }
+  async sanitizeSchedule(schedule: StationScheduleDTO) {
+    if (schedule.departureFromCurrentStation === schedule.endStationArrival)
+      schedule.departureFromCurrentStation = null;
+    else if (
+      schedule.startStationDeparture === schedule.departureFromCurrentStation
+    )
+      schedule.arrivalToCurrentStation = null;
 
-    return sanitizeBody(scheduleObject);
+    return sanitizeBody(schedule);
   }
 }
