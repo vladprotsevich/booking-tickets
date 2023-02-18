@@ -1,49 +1,34 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { UserDTO } from './dto/user.dto';
-import { dbConf } from 'src/db/knexfile';
+import { Injectable } from '@nestjs/common';
+import { UpdateUserDTO } from './dto/update.user.dto';
 import { SignUpDTO } from '../auth/dto/sign-up.dto';
-import { SingInDTO } from '../auth/dto/sign-in.dto';
+import { DatabaseService } from '../database/database.service';
+import { sanitizeBody } from '../../common/sanitize';
+import { UserDTO } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
-  async createUser(body: SignUpDTO): Promise<UserDTO> {
-    return await dbConf('users').insert(body);
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  async getAllUsers() {
+    return this.databaseService.findAll('users', ['*'], {});
   }
 
-  async findUserById(id: string | number): Promise<UserDTO> {
-    return await dbConf('users').where('id', id)?.first();
+  async createUser(body: SignUpDTO) {
+    return this.databaseService.createObj('users', body);
   }
 
-  async findUserByEmail(email: string): Promise<UserDTO> {
-    return await dbConf('users').where('email', email).first();
+  async updateUser(id: string | number, body: UpdateUserDTO) {
+    return this.databaseService.updateObj('users', body, { id: id });
   }
 
-  async updateUserById(
-    userId: string | number,
-    attrName: string,
-    attrValue: string,
-  ) {
-    return await dbConf('users')
-      .where('id', userId)
-      .update(attrName, attrValue);
+  async findOneByEmail(email: string) {
+    return this.databaseService.findOne('users', ['*'], { email });
   }
 
-  async isUserExist(info: SignUpDTO | SingInDTO | UserDTO): Promise<boolean> {
-    let userById = null;
-    let userByEmail = null;
-    info.id && (userById = await this.findUserById(info.id));
-    info.email && (userByEmail = await this.findUserByEmail(info.email));
-
-    return userById || userByEmail;
-  }
-
-  async sanitizeUser(body: any) {
+  async sanitizeUser(body: UserDTO) {
     body.password = null;
     body.token = null;
-    body = Object.entries(body).reduce(
-      (a, [k, v]) => (v == null ? a : ((a[k] = v), a)),
-      {},
-    );
-    return body;
+
+    return sanitizeBody(body);
   }
 }

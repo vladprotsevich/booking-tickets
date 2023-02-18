@@ -8,7 +8,7 @@ import { UsersService } from 'src/modules/users/users.service';
 export class JWTStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     private readonly configService: ConfigService,
-    private readonly userService: UsersService,
+    private readonly usersService: UsersService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -18,8 +18,8 @@ export class JWTStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: any) {
-    const user = await this.userService.findUserByEmail(payload.user_email);
-    const sanitizedUser = await this.userService.sanitizeUser(user);
+    const user = await this.usersService.findOneByEmail(payload.user_email);
+    const sanitizedUser = this.usersService.sanitizeUser(user);
     return { ...sanitizedUser };
   }
 }
