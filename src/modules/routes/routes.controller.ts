@@ -1,21 +1,7 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  ParseUUIDPipe,
-  Post,
-} from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiCreatedResponse,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { CreateArrivalDTO } from '../stations/dto/create.arrival.dto';
 import { CreateRouteDTO } from './dto/create.route.dto';
-import { RouteDTO } from './dto/route.dto';
 import { RoutesService } from './routes.service';
 
 @ApiTags('Routes')
@@ -25,7 +11,6 @@ export class RoutesController {
 
   @ApiCreatedResponse({
     description: 'All routes',
-    type: [RouteDTO],
   })
   @Get('/')
   async index() {
@@ -35,10 +20,6 @@ export class RoutesController {
 
   @ApiCreatedResponse({
     description: 'The record is created',
-    type: CreateRouteDTO,
-  })
-  @ApiBadRequestResponse({
-    description: 'Bad Request.',
   })
   @Post('/')
   async create(@Body() body: CreateRouteDTO) {
@@ -48,27 +29,18 @@ export class RoutesController {
 
   @ApiCreatedResponse({
     description: 'The record is created',
-    type: CreateArrivalDTO,
-  })
-  @ApiBadRequestResponse({
-    description: 'Bad Request.',
   })
   @Post('/add-station')
   async addStation(@Body() body: CreateArrivalDTO) {
-    return await this.routesService.addStation(body);
+    return this.routesService.addStation(body);
   }
 
   @Get('/:uuid/stations')
   async getRoutesStations(
-    @Param(
-      'uuid',
-      new ParseUUIDPipe({
-        version: '4',
-      }),
-    )
-    route_uuid: string,
+    @Param('uuid')
+    routeUUID: string,
   ) {
-    const stations = await this.routesService.nestedStations(route_uuid);
+    const stations = await this.routesService.nestedStations(routeUUID);
     return { stations };
   }
 }

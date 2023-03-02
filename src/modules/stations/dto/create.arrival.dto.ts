@@ -23,5 +23,5 @@ export class CreateArrivalDTO {
   stop_time: string;
 
   @IsNotEmpty()
-  consistency_number: number;
+  order: number;
 }

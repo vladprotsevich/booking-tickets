@@ -1,5 +1,4 @@
-export enum StateStatuses {
-  available_status = 'Available',
-  unavailable_status = 'Unavailable',
-  booked_status = 'Booked',
+export enum TicketStatus {
+  unavailable = 'Sold',
+  booked = 'Booked',
 }

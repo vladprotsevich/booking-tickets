@@ -3,21 +3,26 @@ import {
   Controller,
   Get,
   Param,
-  ParseUUIDPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/guards/jwt-guard';
+import { RoleGuard } from '../../guards/role.guard';
+import { Roles } from '../auth/roles/roles.decorator';
 import { CreateTrainDTO } from './dto/create.train.dto';
-import { TrainRouteDTO } from './dto/trains.route.dto';
+import { SearchTrainsByParamsDTO } from './dto/search.trains.by.params.dto';
 import { TrainsService } from './trains.service';
 
 @Controller('trains')
 export class TrainsController {
   constructor(private readonly trainsService: TrainsService) {}
 
+  @Roles('Passenger')
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @Get('/')
-  async index(@Query() query: TrainRouteDTO) {
-    const trains = await this.trainsService.allTrains(query);
+  async index(@Query() query: SearchTrainsByParamsDTO) {
+    const trains = await this.trainsService.getAvailableTrains(query);
     return { trains };
   }
 

@@ -7,8 +7,10 @@ import { UsersModule } from './modules/users/users.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { StationsModule } from './modules/stations/stations.module';
 import { TrainsModule } from './modules/trains/trains.module';
-import configuration from './configuration/token.configuration';
+import { TicketsModule } from './modules/tickets/tickets.module';
+import { CarriagesModule } from './modules/carriages/carriages.module';
 
+import configuration from './configuration/token.configuration';
 @Module({
   imports: [
     AuthModule,
@@ -16,6 +18,8 @@ import configuration from './configuration/token.configuration';
     RoutesModule,
     StationsModule,
     TrainsModule,
+    TicketsModule,
+    CarriagesModule,
     ConfigModule.forRoot({
       envFilePath: '.development.env',
       isGlobal: true,

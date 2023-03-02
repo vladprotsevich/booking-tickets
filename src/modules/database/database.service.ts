@@ -11,8 +11,7 @@ export class DatabaseService {
   async findAll(table: string, columns: string[], filters?: object) {
     let dbQuery = dbConf(table).select(columns).returning('*');
 
-    const a = Object.keys(filters).length ? dbQuery.where(filters) : dbQuery;
-    return a;
+    return Object.keys(filters).length ? dbQuery.where(filters) : dbQuery;
   }
 
   async findOne(table: string, columns: string[], filters?: object) {
@@ -30,12 +29,11 @@ export class DatabaseService {
     transaction?: Knex.Transaction,
   ) {
     try {
-      const dbQuery = dbConf(table).insert(columns).returning('*').limit(1);
+      const dbQuery = dbConf(table).insert(columns).returning('*');
 
-      const query = transaction ? dbQuery.transacting(transaction) : dbQuery;
-      return await query;
-    } catch {
-      throw new BadRequestException();
+      return transaction ? dbQuery.transacting(transaction) : dbQuery;
+    } catch (err) {
+      throw new Error(err);
     }
   }
 
@@ -50,8 +48,7 @@ export class DatabaseService {
         .where(filters)
         .update(columns)
         .returning('*');
-      const query = transaction ? dbQuery.transacting(transaction) : dbQuery;
-      return await query;
+      return transaction ? dbQuery.transacting(transaction) : dbQuery;
     } catch {
       throw new BadRequestException();
     }
@@ -64,8 +61,7 @@ export class DatabaseService {
   ) {
     try {
       const dbQuery = dbConf(table).where(filters).del();
-      const query = transaction ? dbQuery.transacting(transaction) : dbQuery;
-      return await query;
+      return transaction ? dbQuery.transacting(transaction) : dbQuery;
     } catch {
       throw new BadRequestException();
     }

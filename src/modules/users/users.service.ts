@@ -4,6 +4,7 @@ import { SignUpDTO } from '../auth/dto/sign-up.dto';
 import { DatabaseService } from '../database/database.service';
 import { sanitizeBody } from '../../common/sanitize';
 import { UserDTO } from './dto/user.dto';
+import { CreateUserDTO } from './dto/create.user.dto';
 
 @Injectable()
 export class UsersService {
@@ -13,12 +14,16 @@ export class UsersService {
     return this.databaseService.findAll('users', ['*'], {});
   }
 
-  async createUser(body: SignUpDTO) {
+  async createUser(body: SignUpDTO | CreateUserDTO) {
     return this.databaseService.createObj('users', body);
   }
 
-  async updateUser(id: string | number, body: UpdateUserDTO) {
-    return this.databaseService.updateObj('users', body, { id: id });
+  async updateUser(userUUID: string, body: UpdateUserDTO) {
+    return this.databaseService.updateObj('users', body, { id: userUUID });
+  }
+
+  async removeUser(email: string) {
+    return this.databaseService.removeObj('users', { email });
   }
 
   async findOneByEmail(email: string) {

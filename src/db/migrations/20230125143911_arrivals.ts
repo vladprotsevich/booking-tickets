@@ -5,7 +5,7 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('id').defaultTo(knex.raw('uuid_generate_v4()'));
     table.uuid('route_id').references('id').inTable('routes');
     table.uuid('station_id').references('id').inTable('stations');
-    table.integer('consistency_number').notNullable();
+    table.integer('consistency_number').notNullable().index();
     table.time('travel_time').notNullable();
     table.time('stop_time').notNullable();
     table.unique(['route_id', 'station_id']);

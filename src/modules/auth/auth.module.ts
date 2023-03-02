@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JWTStrategy } from 'src/strategy/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -11,7 +11,7 @@ import { TokenService } from './token.service';
 dotenv.config({ path: '.development.env' });
 
 @Module({
-  imports: [UsersModule],
+  imports: [forwardRef(() => UsersModule)],
   controllers: [AuthController],
   providers: [AuthService, TokenService, JWTStrategy, JwtService],
   exports: [AuthService, TokenService],

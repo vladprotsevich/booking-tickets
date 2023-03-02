@@ -5,13 +5,11 @@ import {
 } from '@nestjs/common';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { TokenService } from './token.service';
-import { DatabaseService } from '../database/database.service';
-
-import * as bcrypt from 'bcrypt';
 import { UserDTO } from '../users/dto/user.dto';
 import { SingInDTO } from './dto/sign-in.dto';
 import { UsersService } from '../users/users.service';
-
+import * as bcrypt from 'bcrypt';
+import { CreateUserDTO } from '../users/dto/create.user.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -19,7 +17,7 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async register(body: SignUpDTO): Promise<void> {
+  async register(body: SignUpDTO | CreateUserDTO): Promise<void> {
     const userObj = await this.usersService.findOneByEmail(body.email);
     if (userObj) throw new BadRequestException();
     body.password = await this.encryptUserPassword(body.password);
@@ -27,7 +25,7 @@ export class AuthService {
   }
 
   async login(body: SingInDTO) {
-    const user = await this.usersService.findOneByEmail(body.email);
+    const user: UserDTO = await this.usersService.findOneByEmail(body.email);
     if (user && (await this.decryptUserPassword(body.password, user))) {
       const access_token = await this.generateAuthJwtAccessToken(user);
       const refresh_token = await this.generateAuthJwtRefreshToken(user);

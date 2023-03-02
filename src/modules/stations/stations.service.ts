@@ -30,31 +30,30 @@ export class StationsService {
     return this.databaseService.updateObj('stations', { id: body.id }, body);
   }
 
-  async getSchedule(station_uuid: string) {
-    const trains = await this.trainsService.getTrains(station_uuid);
+  async getSchedule(stationUUID: string) {
+    const trains = await this.trainsService.getPassingTrains(stationUUID);
     const schedule = [];
 
     for (let i = 0; i < trains.length; i++) {
-      const FirstDepartureStationTime = trains[i].departure_time;
+      const firstDepartureStationTime = trains[i].departure_time;
       const lastStationArrivalTime = await this.getLastStationTime(
-        FirstDepartureStationTime,
-        trains[i].id,
-        station_uuid,
+        firstDepartureStationTime,
+        trains[i].route_id,
       );
       const currentStationArrivalTime = await this.getCurrentStationTime(
-        FirstDepartureStationTime,
-        trains[i].id,
-        station_uuid,
+        firstDepartureStationTime,
+        trains[i].route_id,
+        stationUUID,
       );
       const currentDepartureStationTime =
         await this.getDepartureFromCurrentStationTime(
-          FirstDepartureStationTime,
-          trains[i].id,
-          station_uuid,
+          firstDepartureStationTime,
+          trains[i].route_id,
+          stationUUID,
         );
       const scheduleObject = {
         train_id: trains[i].id,
-        startStationDeparture: FirstDepartureStationTime,
+        startStationDeparture: firstDepartureStationTime,
         endStationArrival: lastStationArrivalTime,
         arrivalToCurrentStation: currentStationArrivalTime,
         departureFromCurrentStation: currentDepartureStationTime,
@@ -66,19 +65,13 @@ export class StationsService {
     return schedule;
   }
 
-  async getLastStationTime(
-    initialDepartureTime: string,
-    train_uuid: string,
-    station_uuid: string,
-  ) {
-    const lastArrivalOrder =
-      await this.arrivalsService.getLastOrderNumberOfStation(
-        train_uuid,
-        station_uuid,
-      );
+  async getLastStationTime(initialDepartureTime: string, routeUUID: string) {
+    const lastArrivalOrder = await this.arrivalsService.getLastStationOrder(
+      routeUUID,
+    );
     const journeyTimeCollection =
       await this.arrivalsService.getJourneyTimeCollection(
-        train_uuid,
+        routeUUID,
         lastArrivalOrder,
       );
     return this.calculateArrivalTime(
@@ -93,7 +86,7 @@ export class StationsService {
     station_uuid: string,
   ) {
     const currenArrivalOrder =
-      await this.arrivalsService.getCurrentOrderNumberOfStation(
+      await this.arrivalsService.getCurrentStationOrder(
         train_uuid,
         station_uuid,
       );
@@ -112,18 +105,15 @@ export class StationsService {
 
   async getDepartureFromCurrentStationTime(
     initialDepartureTime: string,
-    train_uuid: string,
-    station_uuid: string,
+    routeUUID: string,
+    stationUUID: string,
   ) {
     const currenArrivalOrder =
-      await this.arrivalsService.getCurrentOrderNumberOfStation(
-        train_uuid,
-        station_uuid,
-      );
+      await this.arrivalsService.getCurrentStationOrder(routeUUID, stationUUID);
 
     const journeyTimeCollection =
       await this.arrivalsService.getJourneyTimeCollection(
-        train_uuid,
+        routeUUID,
         currenArrivalOrder,
       );
     return this.calculateArrivalTime(
