@@ -9,8 +9,9 @@ import { DaysOfWeek } from 'src/common/enums/days.enum';
 import { Frequencies } from 'src/common/enums/frequency.enum';
 import { dbConf } from 'src/db/knexfile';
 import { DatabaseService } from '../database/database.service';
+import { SeatsService } from '../carriages/seats.service';
 import { CreateTrainDTO } from './dto/create.train.dto';
-import { TrainRouteDTO } from './dto/trains.route.dto';
+import { SearchTrainsByParamsDTO } from './dto/search.trains.by.params.dto';
 import { FrequenciesService } from './frequencies.service';
 import { SchedulesService } from './schedule.service';
 
@@ -19,14 +20,24 @@ export class TrainsService {
   constructor(
     @Inject(forwardRef(() => SchedulesService))
     private readonly scheduleService: SchedulesService,
+    @Inject(forwardRef(() => SeatsService))
+    private readonly seatsService: SeatsService,
     private readonly databaseService: DatabaseService,
     private readonly frequenciesService: FrequenciesService,
   ) {}
 
-  async allTrains(query: TrainRouteDTO) {
-    return Boolean(Object.keys(query).length)
-      ? this.findTrainsByParams(query)
-      : this.databaseService.findAll('trains', ['*'], {});
+  async getAvailableTrains(query: SearchTrainsByParamsDTO) {
+    const { departureDate, trainUUID } = query;
+    const suitableTrains = await this.filterTrainsByFrequencies(departureDate); // First step of validation. Looking for trains suitable for the params
+    const availableTrains =
+      await this.seatsService.filterTrainsBySeatsAvailability(
+        query,
+        suitableTrains,
+      ); // Second step of validation. It checks trains with one or more available seats
+
+    return trainUUID
+      ? this.seatsService.getTrainAvailableSeats(availableTrains, query)
+      : availableTrains;
   }
 
   async findOne(statements: object) {
@@ -44,18 +55,18 @@ export class TrainsService {
   }
 
   async createTrainsFrequency(
-    train_uuid: number,
+    trainUUID: string,
     frequencies: Frequencies[],
     trx: Knex.Transaction,
   ) {
     const frequenciesArray = [];
     for (let i = 0; i < frequencies.length; i++) {
-      const frequency = await this.frequenciesService.findOne({
+      const frequencyObj = await this.frequenciesService.findOne({
         frequency: frequencies[i],
       });
       frequenciesArray.push({
-        train_id: train_uuid,
-        frequency: frequency.frequency,
+        train_id: trainUUID,
+        frequency: frequencyObj.frequency,
       });
     }
     await this.databaseService.createObj(
@@ -65,51 +76,11 @@ export class TrainsService {
     );
   }
 
-  async findTrainsByParams(query: TrainRouteDTO) {
-    const { departure_station, arrival_station, departure_time } = query;
-
-    const statements = await this.getDayOfWeek(departure_time);
-
-    const arrivals = dbConf
-      .select('T1.route_id')
-      .from('arrivals AS T1')
-      .whereIn('T1.station_id', [departure_station, arrival_station])
-      .groupBy('T1.route_id')
-      .having(dbConf.raw('COUNT("T1"."route_id")'), '>', '1')
-      .andWhere(
-        dbConf.raw(
-          `(select consistency_number from arrivals AS "T2" where "T2"."station_id" = ? and "T1"."route_id" = "T2"."route_id")`,
-          [departure_station],
-        ),
-        '<',
-        dbConf.raw(
-          `(select consistency_number from arrivals AS "T3" where "T3"."station_id" = ? and "T1"."route_id" = "T3"."route_id")`,
-          [arrival_station],
-        ),
-      ); // returns the collection of arrivals objects where departure and arrival stations in one route and departure's consistency num less than arrival's consistency num
-
-    return dbConf
-      .select([
-        'train_id',
-        'number',
-        'route_id',
-        'departure_time',
-        'train_type',
-      ])
-      .from('trains')
-      .distinct('trains.number')
-      .whereIn('trains.route_id', arrivals)
-      .innerJoin('trains_frequencies', function () {
-        this.on('trains.id', '=', 'trains_frequencies.train_id');
-      })
-      .whereIn('trains_frequencies.frequency', [...statements, 'daily']);
+  async getSchedule(trainNumber: string) {
+    return this.scheduleService.getSchedule(trainNumber);
   }
 
-  async getSchedule(train_number: string) {
-    return this.scheduleService.getSchedule(train_number);
-  }
-
-  async getDayOfWeek(inputDate: any) {
+  async getDayOfWeek(inputDate: string) {
     const date = new Date(inputDate);
 
     if (date.toString() === 'Invalid Date') {
@@ -122,17 +93,36 @@ export class TrainsService {
     }
   }
 
-  async getTrains(station_uuid: string) {
+  async getTrainsByRange(trainsUUID: string[]) {
+    return dbConf('trains').whereIn('trains.id', trainsUUID);
+  }
+
+  async getPassingTrains(stationUUID: string) {
     // returns the list of trains which pass via the received station
     return dbConf
       .select('trains.*')
       .from('trains')
       .innerJoin('routes', function () {
-        this.on('routes.id', '=', 'trains.route_id');
+        this.on('routes.id', 'trains.route_id');
       })
       .innerJoin('arrivals', function () {
-        this.on('arrivals.route_id', '=', 'routes.id');
+        this.on('arrivals.route_id', 'routes.id');
       })
-      .where('arrivals.station_id', '=', station_uuid);
+      .where('arrivals.station_id', stationUUID);
+  }
+
+  async filterTrainsByFrequencies(departureDate: string) {
+    const frequencyStatements = await this.getDayOfWeek(departureDate);
+    return dbConf
+      .select('trains.*')
+      .from('trains')
+      .distinct('trains.number')
+      .innerJoin('trains_frequencies', function () {
+        this.on('trains.id', '=', 'trains_frequencies.train_id');
+      })
+      .whereIn('trains_frequencies.frequency', [
+        ...frequencyStatements,
+        'daily',
+      ]);
   }
 }

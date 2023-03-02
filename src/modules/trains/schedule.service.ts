@@ -10,28 +10,28 @@ export class SchedulesService {
     private readonly arrivalsService: ArrivalsService,
   ) {}
 
-  async getSchedule(train_number: string) {
-    const train = await this.trainsService.findOne({ number: train_number });
+  async getSchedule(trainUUID: string) {
+    const train = await this.trainsService.findOne({ id: trainUUID });
     const arrivals = await this.arrivalsService.getRoutesArrivalsCollection(
       train.route_id,
     );
 
     const schedulesSubRoutes = [];
-
     const travelTimeSequence = [train.departure_time];
-    for (let i = 0; i < arrivals.length - 1; i++) {
-      let nextStationArrivalTime = this.getTotalTravelTime([
-        travelTimeSequence[i],
-        arrivals[i + 1].travel_time,
-        arrivals[i].stop_time,
-      ]);
 
+    for (let i = 0; i < arrivals.length - 1; i++) {
       const departureTime = this.getTotalTravelTime([
         travelTimeSequence[i],
         arrivals[i].stop_time,
       ]);
 
-      travelTimeSequence.push(nextStationArrivalTime);
+      let arrivalTime = this.getTotalTravelTime([
+        travelTimeSequence[i],
+        arrivals[i + 1].travel_time,
+        arrivals[i].stop_time,
+      ]);
+
+      travelTimeSequence.push(arrivalTime);
 
       schedulesSubRoutes.push({
         departureStation: arrivals[i].station_id,
@@ -58,7 +58,7 @@ export class SchedulesService {
     const oneMinuteInMill = 60000;
     const oneHourInMill = 3600000;
 
-    const timeArray = time.split(':').map((x) => Number(x));
+    const timeArray = time.split(':').map(Number);
     const timeHours: number = timeArray[0];
     const timeMinutes: number = timeArray[1];
 

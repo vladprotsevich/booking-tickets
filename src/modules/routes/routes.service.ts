@@ -20,14 +20,14 @@ export class RoutesService {
     return this.databaseService.createObj('arrivals', body);
   }
 
-  async nestedStations(route_uuid: string) {
+  async nestedStations(routeUUID: string) {
     try {
       return dbConf('stations')
         .innerJoin('arrivals', function () {
           this.on('stations.id', '=', 'arrivals.station_id');
         })
-        .where('arrivals.route_id', route_uuid)
-        .select('stations.id', 'stations.name');
+        .where('arrivals.route_id', routeUUID)
+        .select('stations.id', 'stations.name', 'arrivals.order');
     } catch {
       throw new NotFoundException('Not Found', {
         cause: new Error(),

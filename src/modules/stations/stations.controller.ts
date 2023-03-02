@@ -20,10 +20,6 @@ export class StationsController {
 
   @ApiCreatedResponse({
     description: 'The record is created',
-    type: CreateStationDTO,
-  })
-  @ApiBadRequestResponse({
-    description: 'Bad Request.',
   })
   @Post('/')
   async create(@Body() body: CreateStationDTO) {
@@ -33,10 +29,6 @@ export class StationsController {
 
   @ApiCreatedResponse({
     description: 'The record is created',
-    type: UpdateStationDTO,
-  })
-  @ApiBadRequestResponse({
-    description: 'Bad Request.',
   })
   @Put('/')
   async update(@Body() body: StationDTO) {
