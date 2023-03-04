@@ -9,7 +9,7 @@ import { SingInDTO } from './dto/sign-in.dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDTO } from '../users/dto/create.user.dto';
-import { Users } from '../users/models/users.model';
+import { User } from '../users/models/users.model';
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,7 +17,7 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async register(body: SignUpDTO | CreateUserDTO): Promise<void> {
+  async register(body: SignUpDTO | CreateUserDTO): Promise<void> { // remove | (leave only 1 interface)
     const userObj = await this.usersService.findOneByEmail(body.email);
     if (userObj) throw new BadRequestException();
     body.password = await this.encryptUserPassword(body.password);
@@ -25,7 +25,7 @@ export class AuthService {
   }
 
   async login(body: SingInDTO) {
-    const user: Users = await this.usersService.findOneByEmail(body.email);
+    const user: User = await this.usersService.findOneByEmail(body.email);
     if (user && (await this.decryptUserPassword(body.password, user))) {
       const access_token = await this.generateAuthJwtAccessToken(user);
       const refresh_token = await this.generateAuthJwtRefreshToken(user);
@@ -44,15 +44,15 @@ export class AuthService {
     return bcrypt.hash(password, 5);
   }
 
-  async decryptUserPassword(password: string, user: Users): Promise<boolean> {
+  async decryptUserPassword(password: string, user: User): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }
 
-  async generateAuthJwtAccessToken(user: Users): Promise<string> {
+  async generateAuthJwtAccessToken(user: User): Promise<string> {
     return this.tokenService.generateJwtToken(user, 'access_token', '1h');
   }
 
-  async generateAuthJwtRefreshToken(user: Users): Promise<string> {
+  async generateAuthJwtRefreshToken(user: User): Promise<string> {
     return this.tokenService.generateJwtToken(user, 'refresh_token', '24h');
   }
 }

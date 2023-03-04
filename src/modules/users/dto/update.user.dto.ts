@@ -4,10 +4,6 @@ import { Roles } from 'src/common/enums/roles.enum';
 export class UpdateUserDTO {
   @ApiPropertyOptional()
   @IsOptional()
-  readonly id?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   readonly name?: string;
 
   @ApiPropertyOptional()

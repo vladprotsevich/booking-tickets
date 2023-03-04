@@ -1,4 +1,4 @@
-export interface UnAvailableSeats {
+export interface UnAvailableSeat {
   departureOrder: number;
 
   arrivalOrder: number;

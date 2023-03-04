@@ -11,9 +11,8 @@ import { Arrivals } from '../arrivals/models/arrivals.model';
 export class RoutesService {
   constructor(private readonly arrivalsService: ArrivalsService) {}
 
-  qb(table?: string) {
-    table ||= 'routes';
-    return dbConf(table);
+  private qb() {
+    return dbConf<Routes>('routes');
   }
 
   async allRoutes(): Promise<Routes[]> {
@@ -21,8 +20,8 @@ export class RoutesService {
   }
 
   async createRoute(body: CreateRouteDTO): Promise<Routes> {
-    const route = this.qb().insert(body).returning('*');
-    return route[0];
+    const [route] = await this.qb().insert(body).returning('*');
+    return route;
   }
 
   async addStation(body: CreateArrivalDTO): Promise<Arrivals> {

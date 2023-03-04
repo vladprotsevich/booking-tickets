@@ -42,5 +42,5 @@ export class CreateTrainDTO {
 
   @ApiProperty({ enum: FrequencyType, type: [Frequencies] })
   @IsEnum(FrequencyType, { each: true })
-  frequencies?: FrequencyType[];
+  frequencies: FrequencyType[];
 }

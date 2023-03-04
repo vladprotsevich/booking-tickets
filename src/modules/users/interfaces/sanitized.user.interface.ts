@@ -1,6 +1,6 @@
 import { Roles } from 'src/common/enums/roles.enum';
 
-export interface SanitizedUser {
+export class SanitizedUser {
   id: string;
 
   name: string;

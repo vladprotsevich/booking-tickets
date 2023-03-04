@@ -1,4 +1,6 @@
-export class Users {
+import { Roles } from "../../../common/enums/roles.enum";
+
+export class User {
   id: string;
 
   name: string;
@@ -11,7 +13,7 @@ export class Users {
 
   token: string;
 
-  role: string;
+  role: Roles;
 
   banned: boolean;
 }

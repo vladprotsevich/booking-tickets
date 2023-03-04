@@ -7,7 +7,7 @@ import { Arrivals } from './models/arrivals.model';
 export class ArrivalsService {
   qb(table?: string) {
     table ||= 'arrivals';
-    return dbConf(table);
+    return dbConf<Arrivals>(table);
   }
 
   async createArrival(body: CreateArrivalDTO): Promise<Arrivals> {
@@ -15,14 +15,14 @@ export class ArrivalsService {
     return arrival[0];
   }
 
-  async getArrivalsByRoute(route_id: string): Promise<Arrivals[]> {
+  async getArrivalsByRoute(route_id: string) {
     return this.qb().where({ route_id }).orderBy('order', 'asc');
   }
 
   async getJourneyCollectionByRoute(
     route_id: string,
     order: number,
-  ): Promise<Arrivals[]> {
+  ) {
     return this.qb()
       .select('station_id', 'travel_time', 'stop_time')
       .where({ route_id })
@@ -36,8 +36,12 @@ export class ArrivalsService {
   async getCurrentStationOrder(
     route_id: string,
     station_id: string,
-  ): Promise<Arrivals> {
-    return this.qb().where({ route_id, station_id }).first();
+  ) {
+    const { order } = await this.qb()
+      .select('order')
+      .where({ route_id, station_id })
+      .first();
+    return order;
   }
 
   async getPassingStationsRoutes(

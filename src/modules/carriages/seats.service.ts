@@ -12,7 +12,7 @@ import { TrainsService } from '../trains/trains.service';
 import { CreateSeatDTO } from './dto/create.seat.dto';
 import { Trains } from '../trains/models/trains.model';
 import { Seats } from './models/seats.model';
-import { UnAvailableSeats } from './interfaces/unavailable.seats.interface';
+import { UnAvailableSeat } from './interfaces/unavailable.seats.interface';
 
 @Injectable()
 export class SeatsService {
@@ -24,16 +24,16 @@ export class SeatsService {
 
   qb(table?: string) {
     table ||= 'seats';
-    return dbConf(table);
+    return dbConf<Seats>(table);
   }
 
-  async findOne(id: string): Promise<Seats> {
+  async findOne(id: string) {
     return this.qb().where({ id }).first();
   }
 
   async create(body: CreateSeatDTO, trx: Knex.Transaction): Promise<Seats> {
-    const seat = this.qb().transacting(trx).insert(body).returning('*');
-    return seat[0];
+    const [seat] = await this.qb().transacting(trx).insert(body).returning('*');
+    return seat;
   }
 
   async createSeatsCollection(
@@ -41,11 +41,11 @@ export class SeatsService {
     carriage_id: string,
     trx: Knex.Transaction,
   ): Promise<Seats[]> {
-    const seats = [];
+    const promises = [];
     for (let i = 1; i < amount + 1; i++) {
-      seats.push(this.create({ number: i, carriage_id }, trx));
+      promises.push(this.create({ number: i, carriage_id }, trx));
     }
-    return Promise.all(seats);
+    return Promise.all(promises);
   }
 
   async getTrainAvailableSeats(
@@ -64,15 +64,14 @@ export class SeatsService {
   async filterTrainsBySeatsAvailability(
     query: SearchTrainQueryDTO,
     trains: Trains[],
-  ): Promise<Trains[]> {
-    const suitableTrains = [];
+  ) {
+    const suitableTrains: string[] = [];
     for (let i = 0; i < trains.length; i++) {
       const availableSeats = await this.findAvailableSeats(query, trains[i].id);
 
       availableSeats.length > 1 && suitableTrains.push(trains[i].id);
     }
-
-    return this.trainsService.getTrainsByRange(suitableTrains);
+    return suitableTrains;
   }
 
   async findAvailableSeats(
@@ -90,41 +89,40 @@ export class SeatsService {
       train.route_id,
       arrivalStation,
     );
-    const unAvailableSeatObj: UnAvailableSeats = {
-      departureOrder: departureOrder.order,
-      arrivalOrder: arrivalOrder.order,
+    const args: UnAvailableSeat = {
+      departureOrder,
+      arrivalOrder,
       departure_date: departureDate,
       train_id: train.id,
       route_id: train.route_id,
     };
-    const unAvailableSeats = await this.getUnAvailableSeats(unAvailableSeatObj);
+    const unAvailableSeats = await this.getUnAvailableSeats(args);
     return this.getAvailableSeats(train.id, unAvailableSeats);
   }
 
   async getUnAvailableSeats(
-    unavailableInfo: UnAvailableSeats,
+    args: UnAvailableSeat,
   ): Promise<Seats[]> {
-    const { departureOrder, arrivalOrder, departure_date, train_id, route_id } =
-      unavailableInfo;
+    const [departureStations, arrivalStations] = await Promise.all([
+      this.arrivalsService
+        .qb()
+        .select('station_id')
+        .where({ route_id: args.route_id })
+        .where('order', '<', args.arrivalOrder),
+      this.arrivalsService
+        .qb()
+        .select('station_id')
+        .where({ route_id: args.route_id })
+        .andWhere('order', '>', args.departureOrder),
+    ]);
+
     return this.qb()
       .distinct('id')
       .innerJoin('tickets', 'tickets.seat_id', '=', 'seats.id')
-      .where({ departure_date })
-      .andWhere({ train_id })
-      .whereIn(
-        'departure_station',
-        dbConf('arrivals')
-          .select('station_id')
-          .where('route_id', '=', route_id)
-          .andWhere('order', '<', arrivalOrder),
-      )
-      .whereIn(
-        'arrival_station',
-        dbConf('arrivals')
-          .select('station_id')
-          .where('route_id', '=', route_id)
-          .andWhere('order', '>', departureOrder),
-      );
+      .where({ departure_date: args.departure_date })
+      .andWhere({ train_id: args.train_id })
+      .whereIn('departure_station', departureStations)
+      .whereIn('arrival_station', arrivalStations);
   }
 
   async getAvailableSeats(
@@ -134,8 +132,9 @@ export class SeatsService {
     const unvalidSeats = unAvailableSeats.map((seat) => seat.id);
     return this.qb()
       .select('seats.*')
-      .innerJoin('carriagles', 'carriages.id', '=', 'seats.carriage_id')
+      .innerJoin('carriages', 'carriages.id', '=', 'seats.carriage_id')
       .where({ train_id })
-      .whereNotIn('seats.id', unvalidSeats);
+      .whereNotIn('seats.id', unvalidSeats)
+      // .first();
   }
 }

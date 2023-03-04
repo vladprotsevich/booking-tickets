@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { Users } from '../users/models/users.model';
+import { User } from '../users/models/users.model';
 import { UserPayload } from '../users/interfaces/user.payload.interface';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class TokenService {
   ) {}
 
   async generateJwtToken(
-    user: Users,
+    user: User,
     tokenType: string,
     expHours: string,
   ): Promise<string> {

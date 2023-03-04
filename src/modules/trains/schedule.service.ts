@@ -11,7 +11,7 @@ export class SchedulesService {
     private readonly arrivalsService: ArrivalsService,
   ) {}
 
-  async getSchedule(train_id: string): Promise<Schedule[]> {
+  async getSchedule(train_id: string) {
     const train = await this.trainsService.findOne(train_id);
     const arrivals = await this.arrivalsService.getArrivalsByRoute(
       train.route_id,
@@ -19,34 +19,42 @@ export class SchedulesService {
 
     const schedulesSubRoutes: Schedule[] = [];
 
-    const travelTimeSequence = [train.departure_time];
+    let currentTime = train.departure_time;
+    let nextTime = '';
+
     for (let i = 0; i < arrivals.length - 1; i++) {
       const departureTime = this.getTotalTravelTime([
-        travelTimeSequence[i],
+        currentTime,
         arrivals[i].stop_time,
       ]);
+
       let arrivalTime = this.getTotalTravelTime([
-        travelTimeSequence[i],
+        currentTime,
         arrivals[i + 1].travel_time,
         arrivals[i].stop_time,
       ]);
-      travelTimeSequence.push(arrivalTime);
-      schedulesSubRoutes.push({
-        departureStation: arrivals[i].station_id,
-        arrivalStation: arrivals[i + 1].station_id,
-        departureTime,
-        arrivalTime: travelTimeSequence[i + 1],
-        stopTime: arrivals[i].stop_time,
-      });
+
+      nextTime = arrivalTime;
+
+      const schedule = new Schedule();
+      schedule.departureStation = arrivals[i].station_id;
+      schedule.arrivalStation = arrivals[i + 1].station_id;
+      schedule.departureTime = departureTime;
+      schedule.arrivalTime = arrivalTime;
+      schedule.stopTime = arrivals[i].stop_time;
+      schedulesSubRoutes.push(schedule);
+
+      currentTime = nextTime;
     }
     return schedulesSubRoutes;
   }
 
   getTotalTravelTime(times: string[]): string {
     let totalTime = 0;
-    times.forEach((time) => {
+
+    for (const time of times) {
       totalTime += this.convertTimeToMilliseconds(time);
-    });
+    }
 
     return this.convertMillisecondsToFullTime(totalTime);
   }
@@ -66,7 +74,8 @@ export class SchedulesService {
   }
 
   convertMillisecondsToFullTime(millisec: number): string {
-    const hours = `0${Math.abs(new Date(millisec).getHours() - 3)}`.slice(-2);
+    const TIME_DIFF_HOURS = 3; 
+    const hours = `0${Math.abs(new Date(millisec).getHours() - TIME_DIFF_HOURS)}`.slice(-2);
     const minutes = `0${new Date(millisec).getMinutes()}`.slice(-2);
     const seconds = `0${new Date(millisec).getSeconds()}`.slice(-2);
 

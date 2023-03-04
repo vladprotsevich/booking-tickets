@@ -16,17 +16,15 @@ export class FrequenciesService {
     return this.qb().where({ frequency }).first();
   }
 
-  async getDayOfWeek(inputDate: string): Promise<string[]> {
+  async getDayOfWeek(inputDate: string) {
+    // tuples
     const date = new Date(inputDate);
 
-    if (date.toString() === 'Invalid Date') {
-      throw new BadRequestException();
-    } else {
-      const dayType = date.getDate() % 2 ? 'odd' : 'even';
-      const dayOfWeek = DaysOfWeek[date.getDay()];
+    if (date.toString() === 'Invalid Date') throw new BadRequestException();
 
-      return [dayType, dayOfWeek];
-    }
+    const dayType = date.getDate() % 2 ? 'odd' : 'even';
+    const dayOfWeek = DaysOfWeek[date.getDay()];
+    return { dayType, dayOfWeek };
   }
 
   async createTrainsFrequency(
@@ -34,13 +32,7 @@ export class FrequenciesService {
     frequencies: FrequencyType[],
     trx: Knex.Transaction,
   ): Promise<Frequencies[]> {
-    const frequenciesArray = [];
-    for (let i = 0; i < frequencies.length; i++) {
-      frequenciesArray.push({
-        train_id,
-        frequency: frequencies[i],
-      });
-    }
+    const frequenciesArray = frequencies.map(frequency => ({ train_id, frequency }));
     return this.qb().transacting(trx).insert(frequenciesArray).returning('*');
   }
 }

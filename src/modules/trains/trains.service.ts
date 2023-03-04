@@ -35,7 +35,9 @@ export class TrainsService {
         query,
         suitableTrains,
       ); // Looking for trains with one or more available seats
-    return train_id
+
+    this.getTrainsByRange(availableTrains);
+    return train_id // TODO: split to different methods
       ? this.seatsService.getTrainAvailableSeats(availableTrains, query)
       : availableTrains;
   }
@@ -52,13 +54,12 @@ export class TrainsService {
     return this.qb().whereIn('id', trains_id);
   }
 
-  async create(body: CreateTrainDTO, trx: Knex.Transaction): Promise<Trains> {
-    const { frequencies, ...rest } = body;
-    const train: Trains[] = await this.qb()
+  async create(body: Omit<CreateTrainDTO, 'frequencies'>, trx: Knex.Transaction) {
+    const [train] = await this.qb()
       .transacting(trx)
-      .insert(rest)
+      .insert(body)
       .returning('*');
-    return train[0];
+    return train;
   }
 
   async getPassingTrains(station_id: string): Promise<Trains[]> {
@@ -79,9 +80,9 @@ export class TrainsService {
       .whereIn('frequencies.frequency', [...frequencies, 'daily']);
   }
 
-  async createTrain(trainBody: CreateTrainDTO): Promise<Trains> {
+  async createTrain(dto: CreateTrainDTO): Promise<Trains> {
     const trx = await dbConf.transaction();
-    const { frequencies, ...rest } = trainBody;
+    const { frequencies, ...rest } = dto;
     const train = await this.create(rest, trx);
     const trainFrequencies =
       await this.frequenciesService.createTrainsFrequency(

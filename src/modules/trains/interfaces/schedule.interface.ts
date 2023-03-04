@@ -1,4 +1,4 @@
-export interface Schedule {
+export class Schedule {
   departureStation: string;
 
   arrivalStation: string;

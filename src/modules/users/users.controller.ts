@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -17,7 +18,7 @@ import { UpdateUserDTO } from './dto/update.user.dto';
 import { UsersService } from './users.service';
 import { BanUser } from './dto/ban.user.dto';
 
-@ApiTags('Users')
+@ApiTags('User')
 @ApiBearerAuth()
 @Controller('users')
 export class UsersController {
@@ -27,7 +28,7 @@ export class UsersController {
   ) {}
 
   @ApiCreatedResponse({
-    description: 'Users list',
+    description: 'User list',
     status: 200,
   })
   @Roles('Admin')
@@ -71,7 +72,7 @@ export class UsersController {
   }
 
   @ApiCreatedResponse({
-    description: 'Users roles is changed',
+    description: 'User roles is changed',
   })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
@@ -86,8 +87,9 @@ export class UsersController {
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/ban')
-  async banUser(@Body() body: BanUser) {
-    return this.usersService.updateUser(body.user_id, { banned: true });
+  async banUser(@Body() user_id: string) {
+    if (!user_id) throw new BadRequestException('Kindly provide user_id!');
+    return this.usersService.updateUser(user_id, { banned: true });
   }
 
   @ApiCreatedResponse({
@@ -96,7 +98,7 @@ export class UsersController {
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/unban')
-  async unBanUser(@Body() body: BanUser) {
+  async unBanUser(@Body() body: BanUser) { // same as previous
     return this.usersService.updateUser(body.user_id, { banned: false });
   }
 }
