@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { TokenService } from './token.service';
-import { UserDTO } from '../users/dto/user.dto';
 import { SingInDTO } from './dto/sign-in.dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDTO } from '../users/dto/create.user.dto';
+import { Users } from '../users/models/users.model';
 @Injectable()
 export class AuthService {
   constructor(
@@ -25,7 +25,7 @@ export class AuthService {
   }
 
   async login(body: SingInDTO) {
-    const user: UserDTO = await this.usersService.findOneByEmail(body.email);
+    const user: Users = await this.usersService.findOneByEmail(body.email);
     if (user && (await this.decryptUserPassword(body.password, user))) {
       const access_token = await this.generateAuthJwtAccessToken(user);
       const refresh_token = await this.generateAuthJwtRefreshToken(user);
@@ -40,19 +40,19 @@ export class AuthService {
     }
   }
 
-  async encryptUserPassword(password: string) {
+  async encryptUserPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 5);
   }
 
-  async decryptUserPassword(password: string, user: UserDTO): Promise<boolean> {
+  async decryptUserPassword(password: string, user: Users): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }
 
-  async generateAuthJwtAccessToken(user: UserDTO) {
+  async generateAuthJwtAccessToken(user: Users): Promise<string> {
     return this.tokenService.generateJwtToken(user, 'access_token', '1h');
   }
 
-  async generateAuthJwtRefreshToken(user: UserDTO) {
+  async generateAuthJwtRefreshToken(user: Users): Promise<string> {
     return this.tokenService.generateJwtToken(user, 'refresh_token', '24h');
   }
 }

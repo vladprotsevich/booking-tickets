@@ -16,7 +16,6 @@ export class AuthController {
 
   @ApiCreatedResponse({
     description: 'Registration was success',
-    type: SignUpDTO,
   })
   @Post('/register')
   async register(@Body() body: SignUpDTO) {
@@ -34,7 +33,6 @@ export class AuthController {
 
   @ApiCreatedResponse({
     description: 'You successfully refreshed the access token',
-    type: TokenDTO,
   })
   @Post('/refresh')
   async refreshJwtToken(@Body() body: TokenDTO) {

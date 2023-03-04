@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
-import { Carriages } from 'src/common/enums/carriages.enum';
+import { CarriageType } from 'src/common/enums/carriage.type.enum';
 import { Prices } from 'src/common/enums/prices.enum';
 import { dbConf } from 'src/db/knexfile';
 import { ArrivalsService } from '../arrivals/arrivals.service';
 import { CarriagesService } from '../carriages/carriages.service';
 import { DatabaseService } from '../database/database.service';
-import { TrainDTO } from '../trains/dto/train.dto';
 import { CreatePriceDTO } from './dto/create.price.dto';
 import { UpdatePricesDTO } from './dto/update.prices.dto';
 
@@ -27,34 +26,32 @@ export class PricesService {
     arrivalStation: string,
     carriageUUID: string,
     ticketUUID: string,
-    train: TrainDTO,
+    // train: TrainDTO,
     trx: Knex.Transaction,
   ) {
-    const departureOrder = await this.arrivalsService.getCurrentStationOrder(
-      train.route_id,
-      departureStation,
-    );
-
-    const arrivalOrder = await this.arrivalsService.getCurrentStationOrder(
-      train.route_id,
-      arrivalStation,
-    );
-    const carriage = await this.carriagesService.findOne({ id: carriageUUID });
-    const stationsInterval = arrivalOrder - departureOrder;
-    const price = await this.calculatePrice(
-      carriage.carriage_type,
-      stationsInterval,
-    );
-
-    const priceObject = {
-      ticket_id: ticketUUID,
-      departure_station: departureStation,
-      arrival_station: arrivalStation,
-      train_type: train.train_type,
-      carriage_type: carriage.carriage_type,
-      price,
-    };
-    return this.createPrice(priceObject, trx);
+    // const departureOrder = await this.arrivalsService.getCurrentStationOrder(
+    //   train.route_id,
+    //   departureStation,
+    // );
+    // const arrivalOrder = await this.arrivalsService.getCurrentStationOrder(
+    //   train.route_id,
+    //   arrivalStation,
+    // );
+    // const carriage = await this.carriagesService.findOne({ id: carriageUUID });
+    // // const stationsInterval = arrivalOrder - departureOrder;
+    // const price = await this.calculatePrice(
+    //   carriage.carriage_type,
+    //   stationsInterval,
+    // );
+    // const priceObject = {
+    //   ticket_id: ticketUUID,
+    //   departure_station: departureStation,
+    //   arrival_station: arrivalStation,
+    //   train_type: train.train_type,
+    //   carriage_type: carriage.carriage_type,
+    //   price,
+    // };
+    // return this.createPrice(priceObject, trx);
   }
 
   async update(
@@ -69,7 +66,7 @@ export class PricesService {
       .transacting(trx);
   }
 
-  async calculatePrice(carriageType: Carriages, stationsInterval: number) {
+  async calculatePrice(carriageType: CarriageType, stationsInterval: number) {
     return Prices[carriageType] * stationsInterval;
   }
 }

@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { Carriages } from 'src/common/enums/carriages.enum';
+import { CarriageType } from 'src/common/enums/carriage.type.enum';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('carriages', (table) => {
@@ -9,8 +9,8 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('first_conductor_id').index();
     table.uuid('second_conductor_id').index();
     table
-      .enum('carriage_type', Object.values(Carriages))
-      .defaultTo(Carriages.reserved);
+      .enum('carriage_type', Object.values(CarriageType))
+      .defaultTo(CarriageType.reserved);
   });
 }
 

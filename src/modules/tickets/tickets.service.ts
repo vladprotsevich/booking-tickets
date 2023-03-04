@@ -5,21 +5,20 @@ import {
 } from '@nestjs/common';
 import { Knex } from 'knex';
 import { TicketStatus } from 'src/common/enums/states.enum';
-import { Trains } from 'src/common/enums/trains.enum';
+import { TrainType } from 'src/common/enums/train.type.enum';
 import { dbConf } from 'src/db/knexfile';
 import { ArrivalsService } from '../arrivals/arrivals.service';
 import { CarriagesService } from '../carriages/carriages.service';
 import { CarriageDTO } from '../carriages/dto/carriage.dto';
 import { SeatsService } from '../carriages/seats.service';
 import { DatabaseService } from '../database/database.service';
-import { TrainDTO } from '../trains/dto/train.dto';
-import { SearchTrainsByParamsDTO } from '../trains/dto/search.trains.by.params.dto';
+import { SearchTrainQueryDTO } from '../trains/dto/search.train.query.dto';
 import { TrainsService } from '../trains/trains.service';
-import { SanitizedUser } from '../users/dto/user.sanitized.dto';
 import { CreateTicketDTO } from './dto/create.ticket.dto';
 import { BuyTicketDTO } from './dto/ticket.buy.dto';
 import { PricesService } from './prices.service';
 import { BookTicketDTO } from './dto/ticket.book.dto';
+import { SanitizedUser } from '../users/interfaces/sanitized.user.interface';
 
 @Injectable()
 export class TicketsService {
@@ -67,44 +66,44 @@ export class TicketsService {
     userUUID: string,
     status: TicketStatus,
   ) {
-    await this.ticketValidation(body);
-    body.status = status;
-    body.user_id = userUUID;
-    const trx = await dbConf.transaction();
-    const train = await this.trainsService.findOne({ id: body.train_id });
-    const ticket = await this.create(body, trx);
-    const price = await this.pricesService.createTicketsPrice(
-      body.departure_station,
-      body.arrival_station,
-      body.carriage_id,
-      ticket[0].id,
-      train,
-      trx,
-    );
-    trx.commit();
-    return { ticket: ticket, price };
+    // await this.ticketValidation(body);
+    // body.status = status;
+    // body.user_id = userUUID;
+    // const trx = await dbConf.transaction();
+    // const train = await this.trainsService.findOne({ id: body.train_id });
+    // const ticket = await this.create(body, trx);
+    // const price = await this.pricesService.createTicketsPrice(
+    //   body.departure_station,
+    //   body.arrival_station,
+    //   body.carriage_id,
+    //   ticket[0].id,
+    //   train,
+    //   trx,
+    // );
+    // trx.commit();
+    // return { ticket: ticket, price };
   }
 
   async ticketValidation(body: BuyTicketDTO) {
-    const train = await this.trainsService.findOne({
-      id: body.train_id,
-    });
-    await this.checkTrainsFrequency(body.departure_date, train.id); // First validation. It checks if a train drives on received departureDate
-    // await this.checkTimeValidity(train.departure_time); // Second validation. It checks the time of departure train and time of purchase the ticket to the train
-    await this.checkCarriageValidity(train.id, body.carriage_id); // Third validation. It checks if received train includes the received carriage.
-    await this.checkRouteValidity(
-      train.route_id,
-      body.departure_station,
-      body.arrival_station,
-    ); // Fourth validation. It checks if departure and arrival stations are in train's route
-    await this.checkTicketsSeatsValidity(
-      body.departure_station,
-      body.arrival_station,
-      body.departure_date,
-      train.id,
-      body.seat_id,
-      body.carriage_id,
-    ); // Fifth validation. It checks if received seat is available for departure and arrival
+    // const train = await this.trainsService.findOne({
+    //   id: body.train_id,
+    // });
+    // await this.checkTrainsFrequency(body.departure_date, train.id); // First validation. It checks if a train drives on received departureDate
+    // // await this.checkTimeValidity(train.departure_time); // Second validation. It checks the time of departure train and time of purchase the ticket to the train
+    // await this.checkCarriageValidity(train.id, body.carriage_id); // Third validation. It checks if received train includes the received carriage.
+    // await this.checkRouteValidity(
+    //   train.route_id,
+    //   body.departure_station,
+    //   body.arrival_station,
+    // ); // Fourth validation. It checks if departure and arrival stations are in train's route
+    // await this.checkTicketsSeatsValidity(
+    //   body.departure_station,
+    //   body.arrival_station,
+    //   body.departure_date,
+    //   train.id,
+    //   body.seat_id,
+    //   body.carriage_id,
+    // ); // Fifth validation. It checks if received seat is available for departure and arrival
   }
 
   async checkCarriageValidity(trainUUID: string, carriageUUID: string) {
@@ -117,15 +116,15 @@ export class TicketsService {
   }
 
   async checkTrainsFrequency(departureDate: string, trainUUID: string) {
-    const trains = await this.trainsService.filterTrainsByFrequencies(
-      departureDate,
-    );
-    const train = trains
-      .map((train) => train.id)
-      .filter((id) => id === trainUUID);
-    if (train.length < 1) {
-      throw new BadRequestException();
-    }
+    // const trains = await this.trainsService.filterTrainsByFrequencies(
+    //   departureDate,
+    // );
+    // const train = trains
+    //   .map((train) => train.id)
+    //   .filter((id) => id === trainUUID);
+    // if (train.length < 1) {
+    //   throw new BadRequestException();
+    // }
   }
 
   async checkRouteValidity(
@@ -133,13 +132,13 @@ export class TicketsService {
     departureStation: string,
     arrivalStation: string,
   ) {
-    const arrivals = await this.arrivalsService.getPassingStationsRoutes(
-      departureStation,
-      arrivalStation,
-    );
-    if (!arrivals.includes(routeUUID)) {
-      throw new BadRequestException();
-    }
+    // const arrivals = await this.arrivalsService.getPassingStationsRoutes(
+    //   departureStation,
+    //   arrivalStation,
+    // );
+    // if (!arrivals.includes(routeUUID)) {
+    //   throw new BadRequestException();
+    // }
   }
 
   async checkTimeValidity(trainDepartureDate: string) {
@@ -161,18 +160,16 @@ export class TicketsService {
     seatUUID: string,
     carriageUUID: string,
   ) {
-    const availableSeats = await this.seatsService.findAvailableSeats(
-      departureStation,
-      arrivalStation,
-      departureDate,
-      trainUUID,
-    );
-
-    const seat = availableSeats.filter(
-      (seat) => seat.carriage_id === carriageUUID && seat.id === seatUUID,
-    );
-
-    if (seat.length < 1)
-      throw new BadRequestException(`Seat id: '${seatUUID}' is unavailable`);
+    // const availableSeats = await this.seatsService.findAvailableSeats(
+    //   departureStation,
+    //   arrivalStation,
+    //   departureDate,
+    //   trainUUID,
+    // );
+    // const seat = availableSeats.filter(
+    //   (seat) => seat.carriage_id === carriageUUID && seat.id === seatUUID,
+    // );
+    // if (seat.length < 1)
+    // throw new BadRequestException(`Seat id: '${seatUUID}' is unavailable`);
   }
 }

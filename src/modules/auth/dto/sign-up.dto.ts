@@ -4,18 +4,20 @@ import { IsNotEmpty, IsString, IsEmail } from 'class-validator';
 export class SignUpDTO {
   @ApiProperty()
   @IsString()
-  name: string;
+  @IsNotEmpty()
+  readonly name: string;
 
   @ApiProperty()
   @IsString()
-  surname: string;
+  @IsNotEmpty()
+  readonly surname: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsEmail()
-  email: string;
+  readonly email: string;
 
   @ApiProperty()
   @IsNotEmpty()
-  password: string;
+  readonly password: string;
 }

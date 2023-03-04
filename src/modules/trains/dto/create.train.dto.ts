@@ -1,7 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { Frequencies } from 'src/common/enums/frequency.enum';
-import { Trains } from 'src/common/enums/trains.enum';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
+import { FrequencyType } from 'src/common/enums/frequency.enum';
+import { TrainType } from 'src/common/enums/train.type.enum';
+import { Frequencies } from '../models/frequency.model';
 
 export class CreateTrainDTO {
   @ApiProperty()
@@ -9,6 +16,7 @@ export class CreateTrainDTO {
   @IsNotEmpty()
   route_id: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   departure_time: string;
@@ -28,11 +36,11 @@ export class CreateTrainDTO {
   @IsNotEmpty()
   head_of_train_id: string;
 
-  @ApiProperty({ enum: Trains })
-  @IsEnum(Trains)
-  train_type: Trains;
+  @ApiProperty({ enum: TrainType })
+  @IsEnum(TrainType)
+  train_type: TrainType;
 
-  @ApiProperty({ enum: Frequencies })
-  @IsEnum(Frequencies, { each: true })
-  frequency: Frequencies[];
+  @ApiProperty({ enum: FrequencyType, type: [Frequencies] })
+  @IsEnum(FrequencyType, { each: true })
+  frequencies?: FrequencyType[];
 }

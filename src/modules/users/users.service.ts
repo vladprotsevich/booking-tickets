@@ -1,39 +1,42 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { UpdateUserDTO } from './dto/update.user.dto';
-import { SignUpDTO } from '../auth/dto/sign-up.dto';
-import { DatabaseService } from '../database/database.service';
-import { sanitizeBody } from '../../common/sanitize';
-import { UserDTO } from './dto/user.dto';
 import { CreateUserDTO } from './dto/create.user.dto';
+import { dbConf } from 'src/db/knexfile';
+import { Users } from './models/users.model';
+import { Knex } from 'knex';
+import { SanitizedUser } from './interfaces/sanitized.user.interface';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly databaseService: DatabaseService) {}
-
-  async getAllUsers() {
-    return this.databaseService.findAll('users', ['*'], {});
+  qb(table?: string): Knex.QueryBuilder<Users> {
+    table ||= 'users';
+    return dbConf(table);
   }
 
-  async createUser(body: SignUpDTO | CreateUserDTO) {
-    return this.databaseService.createObj('users', body);
+  async getAllUsers(): Promise<Users[]> {
+    return this.qb();
   }
 
-  async updateUser(userUUID: string, body: UpdateUserDTO) {
-    return this.databaseService.updateObj('users', body, { id: userUUID });
+  async findOneByEmail(email: string): Promise<Users> {
+    return this.qb().where({ email }).first();
   }
 
-  async removeUser(email: string) {
-    return this.databaseService.removeObj('users', { email });
+  async createUser(body: CreateUserDTO): Promise<Users> {
+    return this.qb().insert(body);
   }
 
-  async findOneByEmail(email: string) {
-    return this.databaseService.findOne('users', ['*'], { email });
+  async updateUser(id: string, body: UpdateUserDTO): Promise<Users> {
+    return this.qb().where({ id }).update(body);
   }
 
-  async sanitizeUser(body: UserDTO) {
-    body.password = null;
-    body.token = null;
+  async removeUser(email: string): Promise<Users> {
+    return this.qb().where({ email }).del();
+  }
 
-    return sanitizeBody(body);
+  async sanitizeUser(body: Users): Promise<SanitizedUser> {
+    body.password = undefined;
+    body.token = undefined;
+
+    return JSON.parse(JSON.stringify(body));
   }
 }

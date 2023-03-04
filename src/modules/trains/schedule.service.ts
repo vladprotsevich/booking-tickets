@@ -1,5 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ArrivalsService } from '../arrivals/arrivals.service';
+import { Schedule } from './interfaces/schedule.interface';
 import { TrainsService } from './trains.service';
 
 @Injectable()
@@ -10,29 +11,26 @@ export class SchedulesService {
     private readonly arrivalsService: ArrivalsService,
   ) {}
 
-  async getSchedule(trainUUID: string) {
-    const train = await this.trainsService.findOne({ id: trainUUID });
-    const arrivals = await this.arrivalsService.getRoutesArrivalsCollection(
+  async getSchedule(train_id: string): Promise<Schedule[]> {
+    const train = await this.trainsService.findOne(train_id);
+    const arrivals = await this.arrivalsService.getArrivalsByRoute(
       train.route_id,
     );
 
-    const schedulesSubRoutes = [];
-    const travelTimeSequence = [train.departure_time];
+    const schedulesSubRoutes: Schedule[] = [];
 
+    const travelTimeSequence = [train.departure_time];
     for (let i = 0; i < arrivals.length - 1; i++) {
       const departureTime = this.getTotalTravelTime([
         travelTimeSequence[i],
         arrivals[i].stop_time,
       ]);
-
       let arrivalTime = this.getTotalTravelTime([
         travelTimeSequence[i],
         arrivals[i + 1].travel_time,
         arrivals[i].stop_time,
       ]);
-
       travelTimeSequence.push(arrivalTime);
-
       schedulesSubRoutes.push({
         departureStation: arrivals[i].station_id,
         arrivalStation: arrivals[i + 1].station_id,
@@ -41,11 +39,10 @@ export class SchedulesService {
         stopTime: arrivals[i].stop_time,
       });
     }
-
     return schedulesSubRoutes;
   }
 
-  getTotalTravelTime(times: string[]) {
+  getTotalTravelTime(times: string[]): string {
     let totalTime = 0;
     times.forEach((time) => {
       totalTime += this.convertTimeToMilliseconds(time);
@@ -54,7 +51,7 @@ export class SchedulesService {
     return this.convertMillisecondsToFullTime(totalTime);
   }
 
-  convertTimeToMilliseconds(time: string) {
+  convertTimeToMilliseconds(time: string): number {
     const oneMinuteInMill = 60000;
     const oneHourInMill = 3600000;
 

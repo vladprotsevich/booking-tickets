@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserDTO } from '../users/dto/user.dto';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
+import { Users } from '../users/models/users.model';
+import { UserPayload } from '../users/interfaces/user.payload.interface';
 
 @Injectable()
 export class TokenService {
@@ -12,10 +13,14 @@ export class TokenService {
     private configService: ConfigService,
   ) {}
 
-  async generateJwtToken(user: UserDTO, tokenType: string, expHours: string) {
-    const payload = { user_email: user.email };
+  async generateJwtToken(
+    user: Users,
+    tokenType: string,
+    expHours: string,
+  ): Promise<string> {
+    const payload: UserPayload = { user_email: user.email, user_id: undefined };
     if (tokenType === 'access_token') {
-      payload['user_id'] = user.id;
+      payload.user_id = user.id;
     }
     const jwt_secret_key = this.configService.get<string>(tokenType + '_key');
     return this.jwtService.sign(payload, {
@@ -39,7 +44,7 @@ export class TokenService {
     }
   }
 
-  async parseJWTToken(token: string) {
+  async parseJWTToken(token: string): Promise<UserPayload> {
     const decoded_token = Buffer.from(token.split('.')[1], 'base64').toString();
     return JSON.parse(decoded_token);
   }

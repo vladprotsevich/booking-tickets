@@ -1,45 +1,53 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
-import { Carriages } from 'src/common/enums/carriages.enum';
 import { dbConf } from 'src/db/knexfile';
-import { DatabaseService } from '../database/database.service';
-import { CarriageDTO } from './dto/carriage.dto';
 import { CreateCarriageDTO } from './dto/create.carriage.dto';
+import { TypeToAmount } from '../../common/type.to.amount.map';
+import { Carriages } from './models/carriges.model';
+import { Seats } from './models/seats.model';
 import { SeatsService } from './seats.service';
 
 @Injectable()
 export class CarriagesService {
   constructor(
-    private readonly databaseServices: DatabaseService,
     @Inject(forwardRef(() => SeatsService))
     private readonly seatsService: SeatsService,
   ) {}
 
-  async findAll(statements: object) {
-    return this.databaseServices.findAll('carriages', ['*'], statements);
+  qb(table?: string) {
+    table ||= 'carriages';
+    return dbConf(table);
   }
 
-  async findOne(statements: object) {
-    return this.databaseServices.findOne('carriages', ['*'], statements);
+  async findAll(): Promise<Carriages[]> {
+    return this.qb();
   }
 
-  async create(carriageInfo: CreateCarriageDTO, trx: Knex.Transaction) {
-    return this.databaseServices.createObj('carriages', carriageInfo, trx);
+  async findOne(id: string): Promise<Carriages> {
+    return this.qb().where({ id }).first();
   }
 
-  async createCarriage(carriageInfo: CreateCarriageDTO) {
+  async create(
+    body: CreateCarriageDTO,
+    trx: Knex.Transaction,
+  ): Promise<Carriages> {
+    const carriage = this.qb().transacting(trx).insert(body).returning('*');
+    return carriage[0];
+  }
+
+  async createCarriage(body: CreateCarriageDTO): Promise<Carriages> {
     const trx = await dbConf.transaction();
-    const carriage = await this.create(carriageInfo, trx);
-    await this.createCarriageSeats(carriage[0], trx);
+    const carriage = await this.create(body, trx);
+    await this.createCarriageSeats(carriage, trx);
     trx.commit();
     return carriage;
   }
 
-  async createCarriageSeats(carriage: CarriageDTO, trx: Knex.Transaction) {
-    let amount = 0;
-    if (Carriages.reserved == carriage.carriage_type) amount = 30;
-    if (Carriages.couple == carriage.carriage_type) amount = 20;
-    if (Carriages.luxury == carriage.carriage_type) amount = 10;
+  async createCarriageSeats(
+    carriage: Carriages,
+    trx: Knex.Transaction,
+  ): Promise<Seats[]> {
+    let amount = TypeToAmount[carriage.carriage_type];
 
     return this.seatsService.createSeatsCollection(amount, carriage.id, trx);
   }

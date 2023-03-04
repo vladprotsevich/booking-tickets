@@ -1,8 +1,8 @@
 import { Knex } from 'knex';
-import { Trains } from 'src/common/enums/trains.enum';
+import { TrainType } from 'src/common/enums/train.type.enum';
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.schema.createTable('trains', (table) => {
+  await knex.schema.createTable('TrainType', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
     table.increments('number').unique().index();
     table.uuid('machinist_id').references('id').inTable('users');
@@ -10,7 +10,9 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('head_of_train_id').references('id').inTable('users');
     table.uuid('route_id').references('id').inTable('routes');
     table.time('departure_time').notNullable();
-    table.enum('train_type', Object.values(Trains)).defaultTo(Trains.regional);
+    table
+      .enum('train_type', Object.values(TrainType))
+      .defaultTo(TrainType.regional);
   });
 }
 

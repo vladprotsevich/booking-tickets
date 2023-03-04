@@ -10,7 +10,7 @@ export async function up(knex: Knex): Promise<void> {
     password: await bcrypt.hash('adminpassword', 5),
     role: 'Admin',
   };
-  await dbConf('users').insert(admin);
+  await knex.table('users').insert(admin);
 }
 
 export async function down(knex: Knex): Promise<void> {

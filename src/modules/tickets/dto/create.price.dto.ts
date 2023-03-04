@@ -1,6 +1,6 @@
 import { IsEnum, IsNotEmpty } from 'class-validator';
-import { Carriages } from 'src/common/enums/carriages.enum';
-import { Trains } from 'src/common/enums/trains.enum';
+import { CarriageType } from 'src/common/enums/carriage.type.enum';
+import { TrainType } from 'src/common/enums/train.type.enum';
 
 export class CreatePriceDTO {
   @IsNotEmpty()
@@ -13,10 +13,10 @@ export class CreatePriceDTO {
   arrival_station: string;
 
   @IsNotEmpty()
-  @IsEnum(Trains)
+  @IsEnum(TrainType)
   train_type: string;
 
   @IsNotEmpty()
-  @IsEnum(Carriages)
+  @IsEnum(CarriageType)
   carriage_type: string;
 }

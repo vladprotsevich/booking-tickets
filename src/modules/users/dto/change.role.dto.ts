@@ -1,15 +1,15 @@
-import { IsBoolean, IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
 import { Roles } from 'src/common/enums/roles.enum';
 
-export class changeRole {
+export class ChangeRoleDTO {
+  @ApiProperty()
   @IsUUID('4')
   @IsNotEmpty()
-  user_id: string;
+  readonly user_id: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsEnum(Roles)
-  role: Roles;
-
-  @IsBoolean()
-  banned: boolean;
+  readonly role: Roles;
 }

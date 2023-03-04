@@ -1,30 +1,39 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsEmail, IsEnum, IsOptional } from 'class-validator';
+import { Roles } from 'src/common/enums/roles.enum';
 export class UpdateUserDTO {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsUUID('4')
-  id?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  readonly id?: string;
 
   @ApiPropertyOptional()
-  name?: string;
+  @IsOptional()
+  readonly name?: string;
 
   @ApiPropertyOptional()
-  surname?: string;
+  @IsOptional()
+  readonly surname?: string;
 
   @ApiPropertyOptional()
-  email?: string;
+  @IsOptional()
+  @IsEmail()
+  readonly email?: string;
 
   @ApiPropertyOptional()
-  password?: string;
+  @IsOptional()
+  readonly password?: string;
 
   @ApiPropertyOptional()
-  token?: string;
+  @IsOptional()
+  readonly token?: string;
 
   @ApiPropertyOptional()
-  role?: string;
+  @IsOptional()
+  @IsEnum(Roles)
+  readonly role?: Roles;
 
   @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
-  banned?: boolean;
+  readonly banned?: boolean;
 }

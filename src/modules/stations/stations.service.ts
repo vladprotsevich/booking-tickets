@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { sanitizeBody } from 'src/common/sanitize';
 import { ArrivalsService } from '../arrivals/arrivals.service';
 import { DatabaseService } from '../database/database.service';
 import { SchedulesService } from '../trains/schedule.service';
@@ -35,49 +34,48 @@ export class StationsService {
     const schedule = [];
 
     for (let i = 0; i < trains.length; i++) {
-      const firstDepartureStationTime = trains[i].departure_time;
-      const lastStationArrivalTime = await this.getLastStationTime(
-        firstDepartureStationTime,
-        trains[i].route_id,
-      );
-      const currentStationArrivalTime = await this.getCurrentStationTime(
-        firstDepartureStationTime,
-        trains[i].route_id,
-        stationUUID,
-      );
-      const currentDepartureStationTime =
-        await this.getDepartureFromCurrentStationTime(
-          firstDepartureStationTime,
-          trains[i].route_id,
-          stationUUID,
-        );
-      const scheduleObject = {
-        train_id: trains[i].id,
-        startStationDeparture: firstDepartureStationTime,
-        endStationArrival: lastStationArrivalTime,
-        arrivalToCurrentStation: currentStationArrivalTime,
-        departureFromCurrentStation: currentDepartureStationTime,
-      };
-
-      const sanitizedScheduleObj = await this.sanitizeSchedule(scheduleObject);
-      schedule.push(sanitizedScheduleObj);
+      // const firstDepartureStationTime = trains[i].departure_time;
+      // const lastStationArrivalTime = await this.getLastStationTime(
+      //   firstDepartureStationTime,
+      //   trains[i].route_id,
+      // );
+      // const currentStationArrivalTime = await this.getCurrentStationTime(
+      //   firstDepartureStationTime,
+      //   trains[i].route_id,
+      //   stationUUID,
+      // );
+      // const currentDepartureStationTime =
+      //   await this.getDepartureFromCurrentStationTime(
+      //     firstDepartureStationTime,
+      //     trains[i].route_id,
+      //     stationUUID,
+      //   );
+      // const scheduleObject = {
+      //   train_id: trains[i].id,
+      //   startStationDeparture: firstDepartureStationTime,
+      //   endStationArrival: lastStationArrivalTime,
+      //   arrivalToCurrentStation: currentStationArrivalTime,
+      //   departureFromCurrentStation: currentDepartureStationTime,
+      // };
+      // const sanitizedScheduleObj = await this.sanitizeSchedule(scheduleObject);
+      // schedule.push(sanitizedScheduleObj);
     }
     return schedule;
   }
 
   async getLastStationTime(initialDepartureTime: string, routeUUID: string) {
-    const lastArrivalOrder = await this.arrivalsService.getLastStationOrder(
-      routeUUID,
-    );
-    const journeyTimeCollection =
-      await this.arrivalsService.getJourneyTimeCollection(
-        routeUUID,
-        lastArrivalOrder,
-      );
-    return this.calculateArrivalTime(
-      initialDepartureTime,
-      journeyTimeCollection,
-    );
+    // const lastArrivalOrder = await this.arrivalsService.getLastStationOrder(
+    //   routeUUID,
+    // );
+    // const journeyTimeCollection =
+    //   await this.arrivalsService.getJourneyCollectionByRoute(
+    //     routeUUID,
+    //     lastArrivalOrder,
+    //   );
+    // return this.calculateArrivalTime(
+    //   initialDepartureTime,
+    //   journeyTimeCollection,
+    // );
   }
 
   async getCurrentStationTime(
@@ -91,16 +89,16 @@ export class StationsService {
         station_uuid,
       );
     const journeyTimeCollection =
-      await this.arrivalsService.getJourneyTimeCollection(
-        train_uuid,
-        currenArrivalOrder,
-      );
-    journeyTimeCollection[journeyTimeCollection.length - 1].stop_time =
+      // await this.arrivalsService.getJourneyTimeCollection(
+      //   train_uuid,
+      //   currenArrivalOrder,
+      // );
+      // journeyTimeCollection[journeyTimeCollection.length - 1].stop_time =
       '00:00:00';
-    return this.calculateArrivalTime(
-      initialDepartureTime,
-      journeyTimeCollection,
-    );
+    // return this.calculateArrivalTime(
+    //   initialDepartureTime,
+    //   journeyTimeCollection,
+    // );
   }
 
   async getDepartureFromCurrentStationTime(
@@ -108,18 +106,17 @@ export class StationsService {
     routeUUID: string,
     stationUUID: string,
   ) {
-    const currenArrivalOrder =
-      await this.arrivalsService.getCurrentStationOrder(routeUUID, stationUUID);
-
-    const journeyTimeCollection =
-      await this.arrivalsService.getJourneyTimeCollection(
-        routeUUID,
-        currenArrivalOrder,
-      );
-    return this.calculateArrivalTime(
-      initialDepartureTime,
-      journeyTimeCollection,
-    );
+    // const currenArrivalOrder =
+    //   await this.arrivalsService.getCurrentStationOrder(routeUUID, stationUUID);
+    // const journeyTimeCollection =
+    //   await this.arrivalsService.getJourneyTimeCollection(
+    //     routeUUID,
+    //     currenArrivalOrder,
+    //   );
+    // return this.calculateArrivalTime(
+    //   initialDepartureTime,
+    //   journeyTimeCollection,
+    // );
   }
 
   async calculateArrivalTime(
@@ -143,6 +140,6 @@ export class StationsService {
     )
       schedule.arrivalToCurrentStation = null;
 
-    return sanitizeBody(schedule);
+    // return sanitizeBody(schedule);
   }
 }

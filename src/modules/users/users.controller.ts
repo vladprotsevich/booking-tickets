@@ -11,11 +11,11 @@ import { JwtAuthGuard } from 'src/guards/jwt-guard';
 import { AuthService } from '../auth/auth.service';
 import { RoleGuard } from '../../guards/role.guard';
 import { Roles } from '../auth/roles/roles.decorator';
-import { changeRole } from './dto/change.role.dto';
+import { ChangeRoleDTO } from './dto/change.role.dto';
 import { CreateUserDTO } from './dto/create.user.dto';
 import { UpdateUserDTO } from './dto/update.user.dto';
-import { UserDTO } from './dto/user.dto';
 import { UsersService } from './users.service';
+import { BanUser } from './dto/ban.user.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -28,7 +28,7 @@ export class UsersController {
 
   @ApiCreatedResponse({
     description: 'Users list',
-    type: [UserDTO],
+    status: 200,
   })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
@@ -38,6 +38,10 @@ export class UsersController {
     return { users };
   }
 
+  @ApiCreatedResponse({
+    description: 'User created',
+    status: 201,
+  })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/')
@@ -46,6 +50,9 @@ export class UsersController {
     return { status: HttpStatus.CREATED, message: 'User was created' };
   }
 
+  @ApiCreatedResponse({
+    description: 'User is updated',
+  })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/')
@@ -53,6 +60,9 @@ export class UsersController {
     return this.usersService.updateUser(body.id, body);
   }
 
+  @ApiCreatedResponse({
+    description: 'User updated',
+  })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/')
@@ -60,24 +70,33 @@ export class UsersController {
     return this.usersService.removeUser(email);
   }
 
+  @ApiCreatedResponse({
+    description: 'Users roles is changed',
+  })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/change-role')
-  async changeUserRole(@Body() body: changeRole) {
+  async changeUserRole(@Body() body: ChangeRoleDTO) {
     return this.usersService.updateUser(body.user_id, { role: body.role });
   }
 
+  @ApiCreatedResponse({
+    description: 'User is banned',
+  })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/ban')
-  async banUser(@Body('user_id') userUUID: string) {
-    return this.usersService.updateUser(userUUID, { banned: true });
+  async banUser(@Body() body: BanUser) {
+    return this.usersService.updateUser(body.user_id, { banned: true });
   }
 
+  @ApiCreatedResponse({
+    description: 'User is unbanned',
+  })
   @Roles('Admin')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post('/unban')
-  async unBanUser(@Body('user_id') userUUID: string) {
-    return this.usersService.updateUser(userUUID, { banned: false });
+  async unBanUser(@Body() body: BanUser) {
+    return this.usersService.updateUser(body.user_id, { banned: false });
   }
 }

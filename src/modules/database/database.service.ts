@@ -8,6 +8,10 @@ import { dbConf } from 'src/db/knexfile';
 
 @Injectable()
 export class DatabaseService {
+  qb(table: string) {
+    return dbConf(table);
+  }
+
   async findAll(table: string, columns: string[], filters?: object) {
     let dbQuery = dbConf(table).select(columns).returning('*');
 

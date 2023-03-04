@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
-import { Carriages } from 'src/common/enums/carriages.enum';
+import { CarriageType } from 'src/common/enums/carriage.type.enum';
 
 export class CreateCarriageDTO {
   @IsNotEmpty()
@@ -13,9 +13,9 @@ export class CreateCarriageDTO {
   @IsUUID('4')
   first_conductor_id: string;
 
-  @IsEnum(Carriages)
+  @IsEnum(CarriageType)
   @IsNotEmpty()
-  carriage_type: Carriages;
+  carriage_type: CarriageType;
 
   @IsNotEmpty()
   @IsUUID('4')

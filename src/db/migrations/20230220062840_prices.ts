@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
-import { Carriages } from 'src/common/enums/carriages.enum';
-import { Trains } from 'src/common/enums/trains.enum';
+import { CarriageType } from 'src/common/enums/carriage.type.enum';
+import { TrainType } from 'src/common/enums/train.type.enum';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('prices', (table) => {
@@ -8,8 +8,8 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('ticket_id').unique().references('id').inTable('tickets');
     table.uuid('departure_station').index();
     table.uuid('arrival_station').index();
-    table.enum('train_type', Object.values(Trains)).notNullable();
-    table.enum('carriage_type', Object.values(Carriages)).notNullable();
+    table.enum('train_type', Object.values(TrainType)).notNullable();
+    table.enum('carriage_type', Object.values(CarriageType)).notNullable();
     table.integer('price');
   });
 }

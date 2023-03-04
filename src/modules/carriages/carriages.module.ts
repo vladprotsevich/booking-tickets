@@ -4,10 +4,9 @@ import { CarriagesController } from './carriages.controller';
 import { CarriagesService } from './carriages.service';
 import { TrainsModule } from '../trains/trains.module';
 import { ArrivalsModule } from '../arrivals/arrivals.module';
-import { DatabaseModule } from '../database/database.module';
 
 @Module({
-  imports: [forwardRef(() => TrainsModule), ArrivalsModule, DatabaseModule],
+  imports: [forwardRef(() => TrainsModule), ArrivalsModule],
   controllers: [CarriagesController],
   providers: [CarriagesService, SeatsService],
   exports: [CarriagesService, SeatsService],
