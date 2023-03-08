@@ -78,8 +78,8 @@ export class SeatService {
 
   async getUnAvailableSeats(args: SearchOccupiedSeats): Promise<Seat[]> {
     const [departureStations, arrivalStations] = await Promise.all([
-      this.arrivalService.findArrivalStations(args, true),
-      this.arrivalService.findArrivalStations(args, false),
+      this.arrivalService.findArrivalStations(args, args.arrivalOrder, true),
+      this.arrivalService.findArrivalStations(args, args.departureOrder, false),
     ]);
     try {
       const occupiedSeats = await this.qb()
@@ -105,11 +105,12 @@ export class SeatService {
   ): Promise<Seat[]> {
     const occupiedSeats = unAvailableSeats.map((seat) => seat.id);
     try {
-      const query = this.qb()
+      const query = this.qb();
+      limit ? query.distinct('train_id') : query.select('seats.*');
+      query
         .innerJoin('carriages', 'carriages.id', '=', 'seats.carriage_id')
         .where('carriages.train_id', train_id)
         .whereNotIn('seats.id', occupiedSeats);
-      limit ? query.distinct('train_id') : query.select('seats.*');
       const seats = await query;
       return seats;
     } catch (error) {

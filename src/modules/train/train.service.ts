@@ -135,8 +135,8 @@ export class TrainService {
       train.frequencies = [...trainFrequencies];
       return train;
     } catch (error) {
-      console.log(error);
       await trx.rollback();
+      console.log(error);
       throw new BadRequestException({ message: 'Invalid data' }); //
     }
   }

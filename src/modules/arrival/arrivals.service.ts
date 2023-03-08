@@ -98,18 +98,16 @@ export class ArrivalService {
   }
 
   async findArrivalStations(
-    args: SearchOccupiedSeats,
+    args: Omit<SearchOccupiedSeats, 'departureOrder' | 'arrivalOrder'>,
+    order: number,
     less: boolean,
-  ): Promise<Arrival[]> {
+  ) {
     try {
-      let query = dbConf('arrivals')
+      const stations = await this.qb()
         .select('station_id')
-        .where('route_id', '=', args.route_id);
-      less
-        ? query.andWhere('order', '<', args.arrivalOrder)
-        : query.andWhere('order', '>', args.departureOrder);
-      const seats = await query;
-      return seats.map((arrival) => arrival.station_id);
+        .where('route_id', '=', args.route_id) // .where({ route_id: args.route_id })
+        .andWhere('order', less ? '<' : '>', order);
+      return stations.map(station => station.station_id);
     } catch (error) {
       console.log(error);
       throw new NotFoundException('Not Found', {
