@@ -5,7 +5,7 @@ export class StationTrainSchedule {
 
   endStationArrival: string;
 
-  arrivalToCurrentStation: string;
+  arrivalToCurrentStation?: string;
 
-  departureFromCurrentStation: string;
+  departureFromCurrentStation?: string;
 }

@@ -42,24 +42,24 @@ export class StationService {
     }
   }
 
-  async updateStation(id: string, body: UpdateStationDTO): Promise<boolean> {
+  async updateStation(id: string, body: UpdateStationDTO) {
     try {
-      const station = await this.qb().update(body).where({ id });
-      return Boolean(station);
+      const affected = await this.qb().update(body).where({ id });
+      return Boolean(affected);
     } catch (error) {
       console.log(error);
       throw new BadRequestException('Bad Request', {
-        description: 'Cannot update the station with invalid data',
+        description: 'Cannot update the station with name that already exists',
       });
     }
   }
 
-  async findStationsByRoute(route_id: string): Promise<Station[]> {
+  async findStationsByRoute(route_id: string) {
     try {
-      const routeStations = await this.qb()
+      const routeStations: { id: string, name: string, order: number }[] = await this.qb()
+        .select('stations.id', 'stations.name', 'arrivals.order') // COMMENT: arrivals.order - do we need it? maybe .orderBy('arrivals.order');
         .innerJoin('arrivals', 'arrivals.station_id', '=', 'stations.id')
-        .where({ route_id })
-        .select('stations.id', 'stations.name', 'arrivals.order');
+        .where({ route_id });
       return routeStations;
     } catch (error) {
       console.log(error);
@@ -72,8 +72,7 @@ export class StationService {
   async getSchedule(station_id: string) {
     const trains = await this.trainService.getStationTrains(station_id);
     const schedule: StationTrainSchedule[] = [];
-    for (let i = 0; i < trains.length; i++) {
-      const train = trains[i];
+    for (const train of trains) {
       const args: DepartureObj = {
         firstDepartureStationTime: train.departure_time,
         route_id: train.route_id,
@@ -81,8 +80,7 @@ export class StationService {
       };
       const lastStationArrivalTime = await this.getLastStationTime(args);
       const currentStationArrivalTime = await this.getCurrentStationTime(args);
-      const currentDepartureStationTime =
-        await this.getDepartureFromCurrentStationTime(args);
+      const currentStationDepartureTime = await this.getDepartureFromCurrentStationTime(args);
 
       const stationTrainSchedule = new StationTrainSchedule();
 
@@ -91,7 +89,7 @@ export class StationService {
       stationTrainSchedule.endStationArrival = lastStationArrivalTime;
       stationTrainSchedule.arrivalToCurrentStation = currentStationArrivalTime;
       stationTrainSchedule.departureFromCurrentStation =
-        currentDepartureStationTime;
+        currentStationDepartureTime;
 
       const sanitizeStationdScheduleObj = await this.sanitizeSchedule(
         stationTrainSchedule,
@@ -156,9 +154,12 @@ export class StationService {
     initialDepartureTime: string,
     journeyTimeCollection: Journey[],
   ) {
-    const timeCollection = journeyTimeCollection
-      .map((travel) => [travel.travel_time, travel.stop_time])
-      .flat();
+    const timeCollection = []
+    for (const { travel_time, stop_time } of journeyTimeCollection) {
+      timeCollection.push(travel_time);
+      timeCollection.push(stop_time);
+    }
+
     return this.scheduleService.getTotalTravelTime([
       initialDepartureTime,
       ...timeCollection,
@@ -166,7 +167,7 @@ export class StationService {
   }
 
   async sanitizeSchedule(schedule: StationTrainSchedule) {
-    if (schedule.departureFromCurrentStation === schedule.endStationArrival)
+    if (schedule.departureFromCurrentStation === schedule.endStationArrival) // COMMENT: station? or type?
       delete schedule.departureFromCurrentStation;
     if (schedule.startStationDeparture === schedule.departureFromCurrentStation)
       delete schedule.arrivalToCurrentStation;

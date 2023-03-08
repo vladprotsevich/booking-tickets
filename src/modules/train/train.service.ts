@@ -37,10 +37,11 @@ export class TrainService {
 
   async findOne(id: string) {
     const train = await this.qb().where({ id }).first();
-    if (train === undefined)
+    if (!train) {
       throw new NotFoundException('Not Found', {
         description: 'Cannot find the train',
       });
+    }
     return train;
   }
 
@@ -84,18 +85,21 @@ export class TrainService {
         trains[i].route_id,
         true,
       );
-      availableSeats.length > 0 && trainIds.push(trains[i].id);
+      if (availableSeats.length) trainIds.push(trains[i].id);
     }
     return this.getTrainsByRange(trainIds);
   }
 
+  /**
+   * returns the list of trains which pass via the received station
+   * @param station_id 
+   * @returns Promise<Train[]>
+   */
   async getStationTrains(station_id: string): Promise<Train[]> {
-    // returns the list of trains which pass via the received station
     try {
       const trains = await this.qb()
         .select('trains.*')
-        .innerJoin('routes', 'routes.id', '=', 'trains.route_id')
-        .innerJoin('arrivals', 'arrivals.route_id', '=', 'routes.id')
+        .innerJoin('arrivals', 'arrivals.route_id', '=', 'trains.route_id')
         .where({ station_id });
       return trains;
     } catch (error) {

@@ -34,8 +34,8 @@ export class StationController {
   }
 
   @Get('/:id/schedule')
-  async stationSchedule(@Param('id') schedule_uuid: string) {
-    const trains = await this.stationService.getSchedule(schedule_uuid);
+  async stationSchedule(@Param('id') station_id: string) {
+    const trains = await this.stationService.getSchedule(station_id);
     return { schedule: { trains } };
   }
 }

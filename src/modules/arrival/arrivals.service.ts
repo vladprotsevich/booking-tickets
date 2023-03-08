@@ -38,7 +38,7 @@ export class ArrivalService {
   async getJourneyCollectionByRoute(
     route_id: string,
     order: number,
-  ): Promise<Journey[]> {
+  ) {
     try {
       const arrivals = await this.qb()
         .select('travel_time', 'stop_time')

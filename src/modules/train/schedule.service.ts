@@ -39,7 +39,7 @@ export class SchedulesService {
     return schedule;
   }
 
-  getTotalTravelTime(times: string[]): string {
+  getTotalTravelTime(times: string[]) {
     let totalTime = 0;
     for (const time of times) {
       totalTime += this.convertTimeToMilliseconds(time);
@@ -47,12 +47,12 @@ export class SchedulesService {
     return this.convertMillisecondsToFullTime(totalTime);
   }
 
-  convertTimeToMilliseconds(time: string): number {
+  convertTimeToMilliseconds(time: string) {
     const oneMinuteInMill = 60000;
     const oneHourInMill = 3600000;
     const timeArray = time.split(':').map(Number);
-    const timeHours: number = timeArray[0];
-    const timeMinutes: number = timeArray[1];
+    const timeHours = timeArray[0];
+    const timeMinutes = timeArray[1];
     const timeMilliseconds =
       timeHours * oneHourInMill + timeMinutes * oneMinuteInMill;
     return timeMilliseconds;
