@@ -1,9 +1,9 @@
 import { Knex } from 'knex';
-import { Roles } from 'src/common/enums/roles.enum';
+import { RoleEnum } from 'src/common/enums/role.enum';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.alterTable('users', (table) => {
-    table.enum('role', Object.values(Roles)).defaultTo(Roles.passenger);
+    table.enum('role', Object.values(RoleEnum)).defaultTo(RoleEnum.passenger);
   });
 }
 

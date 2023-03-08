@@ -1,23 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from '../users/users.service';
-import { Users } from '../users/models/users.model';
-import { UserPayload } from '../users/interfaces/user.payload.interface';
+import { UserService } from '../user/user.service';
+import { User } from '../user/models/user.model';
+import { UserPayload } from '../user/models/user-payload.model';
 
 @Injectable()
 export class TokenService {
   constructor(
     private jwtService: JwtService,
-    private usersService: UsersService,
+    private userService: UserService,
     private configService: ConfigService,
   ) {}
 
-  async generateJwtToken(
-    user: Users,
-    tokenType: string,
-    expHours: string,
-  ): Promise<string> {
+  async generateJwtToken(user: User, tokenType: string, expHours: string) {
     const payload: UserPayload = { user_email: user.email, user_id: undefined };
     if (tokenType === 'access_token') {
       payload.user_id = user.id;
@@ -31,7 +27,7 @@ export class TokenService {
 
   async refreshUsersToken(refresh_token: string) {
     const user_info = await this.parseJWTToken(refresh_token);
-    const user = await this.usersService.findOneByEmail(user_info.user_email);
+    const user = await this.userService.findOneByEmail(user_info.user_email);
     if (user && user.token === refresh_token) {
       const access_token = await this.generateJwtToken(
         user,
