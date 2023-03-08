@@ -1,4 +1,4 @@
-export enum FrequencyType {
+export enum FrequencyEnum {
   daily = 'daily',
   even = 'even',
   odd = 'odd',

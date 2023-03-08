@@ -1,32 +1,30 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { RoutesModule } from './modules/routes/routes.module';
-import { StationsModule } from './modules/stations/stations.module';
-import { TrainsModule } from './modules/trains/trains.module';
-import { TicketsModule } from './modules/tickets/tickets.module';
-import { CarriagesModule } from './modules/carriages/carriages.module';
+import { UserModule } from './modules/user/user.module';
+import { RouteModule } from './modules/route/route.module';
+import { StationModule } from './modules/station/station.module';
+import { TrainModule } from './modules/train/train.module';
+import { TicketModule } from './modules/ticket/ticket.module';
+import { CarriageModule } from './modules/carriage/carriage.module';
 
 import configuration from './configuration/token.configuration';
+import { SeatModule } from './modules/seat/seat.module';
 @Module({
   imports: [
     AuthModule,
-    UsersModule,
-    RoutesModule,
-    StationsModule,
-    TrainsModule,
-    TicketsModule,
-    CarriagesModule,
+    UserModule,
+    RouteModule,
+    SeatModule,
+    StationModule,
+    TrainModule,
+    TicketModule,
+    CarriageModule,
     ConfigModule.forRoot({
       envFilePath: '.development.env',
       isGlobal: true,
       load: [configuration],
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

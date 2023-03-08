@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { TicketStatus } from 'src/common/enums/states.enum';
+import { TicketStatusEnum } from 'src/common/enums/ticket-status.enum';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('tickets', (table) => {
@@ -11,7 +11,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('departure_date', 25).index();
     table.uuid('departure_station').index();
     table.uuid('arrival_station').index();
-    table.enum('status', Object.values(TicketStatus));
+    table.enum('status', Object.values(TicketStatusEnum));
     table.timestamp('purchased_at').defaultTo(knex.raw('CURRENT_TIMESTAMP'));
     table.unique(['seat_id', 'departure_station', 'departure_date']);
   });
