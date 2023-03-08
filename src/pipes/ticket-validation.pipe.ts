@@ -29,31 +29,31 @@ export class TicketValidationPipe implements PipeTransform {
 
     if (errors.length > 0) throw new BadRequestException('Validation failed');
 
-    // await this.validatePurchaseDate(
-    //   ticketObject.train_id,
-    //   ticketObject.departure_date,
-    // );
+    await this.validatePurchaseDate(
+      ticketObject.train_id,
+      ticketObject.departure_date,
+    );
 
-    // await this.validateTrainFrequencies(
-    //   ticketObject.train_id,
-    //   ticketObject.departure_date,
-    // );
+    await this.validateTrainFrequencies(
+      ticketObject.train_id,
+      ticketObject.departure_date,
+    );
 
-    // if (metatype.name === 'BookTicketDTO')
-    //   await this.validateBookingDate(ticketObject.departure_date);
+    if (metatype.name === 'BookTicketDTO')
+      await this.validateBookingDate(ticketObject.departure_date);
 
-    // await this.validateTrainCarriage(
-    //   ticketObject.train_id,
-    //   ticketObject.carriage_id,
-    // );
+    await this.validateTrainCarriage(
+      ticketObject.train_id,
+      ticketObject.carriage_id,
+    );
 
-    // await this.validateRouteStations(
-    //   ticketObject.departure_station,
-    //   ticketObject.arrival_station,
-    //   ticketObject.train_id,
-    // );
+    await this.validateRouteStations(
+      ticketObject.departure_station,
+      ticketObject.arrival_station,
+      ticketObject.train_id,
+    );
 
-    // await this.validateSeatAvailability(ticketObject);
+    await this.validateSeatAvailability(ticketObject);
 
     return value;
   }
