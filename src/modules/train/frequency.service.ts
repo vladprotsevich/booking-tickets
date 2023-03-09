@@ -11,14 +11,14 @@ export class FrequencyService {
     return dbConf<Frequency>('frequencies');
   }
 
-  async findOne(frequency: FrequencyEnum) {
-    return this.qb().where({ frequency }).first();
+  async findOne(train_id: string) {
+    return this.qb().where({ train_id }); // return this.qb().where({ frequency }).first();
   }
 
-  async getDayOfWeek(inputDate: string) {
+  getDayOfWeek(inputDate: string) {
     const date = new Date(inputDate);
     if (date.toString() === 'Invalid Date') throw new BadRequestException();
-    const dayType = date.getDate() % 2 ? 'odd' : 'even';
+    const dayType = date.getDate() % 2 ? FrequencyEnum.odd : FrequencyEnum.even;
     const dayOfWeek = DaysOfWeek[date.getDay()];
     return { dayType, dayOfWeek };
   }

@@ -31,21 +31,23 @@ export class TicketService {
     user_id: string,
     status: TicketStatusEnum,
   ) {
+    const ticket = new Ticket();
+    ticket.user_id = user_id; // COMMENTS: why do we patch user input data
+    ticket.status = status;
+    // ...
     const trx = await dbConf.transaction();
-    body.user_id = user_id;
-    body.status = status;
     try {
-      const [ticket] = await this.qb()
-        .insert(body)
-        .transacting(trx)
-        .returning('*');
+      const [result] = await this.qb()
+        .insert(ticket)
+        .transacting(trx);
+      if (!result) throw new Error('Error inserting ticket');
       const ticketPrice = await this.priceService.createTicketPrice(
         ticket,
         trx,
       );
       ticket.price = ticketPrice.price;
       await trx.commit();
-      return ticket;
+      return result;
     } catch (error) {
       await trx.rollback();
       console.log(error);

@@ -60,6 +60,6 @@ export class CarriageService {
   }
 
   async findCarriageByTrain(id: string, train_id: string) {
-    return this.qb().where({ id, train_id });
+    return this.qb().where({ id, train_id }).first();
   }
 }

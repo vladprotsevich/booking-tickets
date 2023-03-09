@@ -79,7 +79,7 @@ export class ArrivalService {
   async getPassingStationsRoutes(
     departureStation: string,
     arrivalStation: string,
-  ): Promise<Arrival[]> {
+  ): Promise<Pick<Arrival, 'route_id'>[]> {
     try {
       const arrivals = await this.qb('arrivals AS A1')
         .select('A1.route_id')

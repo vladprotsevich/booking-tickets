@@ -23,17 +23,17 @@ export class TicketController {
   @Post('buying')
   async buyingTicket(
     @Body(TicketValidationPipe) body: BuyTicketDTO,
-    @Req() req: Request,
+    @Req() { user }: Request, // COMMENTS: Get sanitized user through the @User custom decorator
   ) {
-    return this.ticketService.buyTicket(body, req.user);
+    return this.ticketService.buyTicket(body, user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('booking')
   async bookingTicket(
     @Body(TicketValidationPipe) body: BookTicketDTO,
-    @Req() req: Request,
+    @Req() { user }: Request, // COMMENTS: same as above
   ) {
-    return this.ticketService.bookTicket(body, req.user);
+    return this.ticketService.bookTicket(body, user);
   }
 }

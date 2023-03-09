@@ -52,7 +52,7 @@ export class PriceService {
       distance,
     );
 
-    const priceObject = new CreatePriceDTO();
+    const priceObject = new CreatePriceDTO(); // COMMENTS: rename CreatePriceDTO to f.ex. CreatePriceParams
 
     priceObject.ticket_id = ticket.id;
     priceObject.departure_station = ticket.departure_station;

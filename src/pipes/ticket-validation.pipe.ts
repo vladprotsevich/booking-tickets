@@ -12,6 +12,8 @@ import { SeatService } from 'src/modules/seat/seat.service';
 import { Ticket } from 'src/modules/ticket/models/ticket.model';
 import { SearchTrainSeatsQueryDTO } from 'src/modules/train/dto/search-available-seats.dto';
 import { TrainService } from 'src/modules/train/train.service';
+import { FrequencyEnum } from '../common/enums/frequency.enum';
+import { FrequencyService } from '../modules/train/frequency.service';
 
 export class TicketValidationPipe implements PipeTransform {
   constructor(
@@ -19,6 +21,7 @@ export class TicketValidationPipe implements PipeTransform {
     @Inject(CarriageService) private readonly carriageService: CarriageService,
     @Inject(ArrivalService) private readonly arrivalService: ArrivalService,
     @Inject(SeatService) private readonly seatService: SeatService,
+    @Inject(FrequencyService) private readonly frequenciesService: FrequencyService,
   ) {}
   async transform(value: any, { metatype }: ArgumentMetadata) {
     if (!metatype || !this.toValidate(metatype)) {
@@ -29,31 +32,31 @@ export class TicketValidationPipe implements PipeTransform {
 
     if (errors.length > 0) throw new BadRequestException('Validation failed');
 
-    // await this.validatePurchaseDate(
-    //   ticketObject.train_id,
-    //   ticketObject.departure_date,
-    // );
+    await this.validatePurchaseDate(
+      ticketObject.train_id,
+      ticketObject.departure_date,
+    );
 
-    // await this.validateTrainFrequencies(
-    //   ticketObject.train_id,
-    //   ticketObject.departure_date,
-    // );
+    await this.validateTrainFrequencies(
+      ticketObject.train_id,
+      ticketObject.departure_date,
+    );
 
-    // if (metatype.name === 'BookTicketDTO')
-    //   await this.validateBookingDate(ticketObject.departure_date);
+    if (metatype.name === 'BookTicketDTO')
+      await this.validateBookingDate(ticketObject.departure_date);
 
-    // await this.validateTrainCarriage(
-    //   ticketObject.train_id,
-    //   ticketObject.carriage_id,
-    // );
+    await this.validateTrainCarriage(
+      ticketObject.train_id,
+      ticketObject.carriage_id,
+    );
 
-    // await this.validateRouteStations(
-    //   ticketObject.departure_station,
-    //   ticketObject.arrival_station,
-    //   ticketObject.train_id,
-    // );
+    await this.validateRouteStations(
+      ticketObject.departure_station,
+      ticketObject.arrival_station,
+      ticketObject.train_id,
+    );
 
-    // await this.validateSeatAvailability(ticketObject);
+    await this.validateSeatAvailability(ticketObject);
 
     return value;
   }
@@ -92,16 +95,24 @@ export class TicketValidationPipe implements PipeTransform {
     train_id: string,
     departureDate: string,
   ) {
-    const trains = await this.trainService.filterTrainsByFrequencies(
-      departureDate,
-    );
-    const train = trains.map((train) => train.id).includes(train_id);
+    const frequencies = await this.frequenciesService.findOne(train_id); // 3*n
+    const { dayOfWeek, dayType } = this.frequenciesService.getDayOfWeek(departureDate);
+    
+    let matches = false;
+    const arr: [FrequencyEnum, FrequencyEnum, FrequencyEnum] = [FrequencyEnum.daily, dayOfWeek, dayType];
 
-    if (!train)
+    for (const { frequency } of frequencies) {
+      if (arr.includes(frequency)) {
+        matches = true;
+        break;
+      }
+    }
+
+    if (!matches) {
       throw new BadRequestException('Bad Request', {
         description: 'The input data for train is not valid',
       });
-    return train;
+    }
   }
 
   private async validateTrainCarriage(train_id: string, carriage_id: string) {
@@ -110,9 +121,9 @@ export class TicketValidationPipe implements PipeTransform {
       train_id,
     );
 
-    if (!carriage.length)
+    if (!carriage)
       throw new BadRequestException('Bad Request', {
-        description: 'The train doest not have the carriage',
+        description: 'The train doest not have this carriage',
       });
 
     return true;
@@ -125,20 +136,18 @@ export class TicketValidationPipe implements PipeTransform {
   ) {
     const train = await this.trainService.findOne(train_id);
 
-    const arrivals = await this.arrivalService.getPassingStationsRoutes(
-      departure_station,
-      arrival_station,
-    );
+    const [departureOrder, arrivalOrder] = await Promise.all([
+      this.arrivalService.getCurrentStationOrder(train.route_id, departure_station),
+      this.arrivalService.getCurrentStationOrder(train.route_id, arrival_station),
+    ]);
 
-    const routes = arrivals.map((arrival) => arrival.route_id);
-
-    if (!routes.includes(train.route_id))
+    if (departureOrder > arrivalOrder)
       throw new BadRequestException('Bad Request', {
         description:
           'The departure or arrival doenst correspond to the train route',
       });
 
-    return true;
+    return true; // COMMENT: why do we need to return anything?
   }
 
   async validateSeatAvailability(ticket: Ticket) {
@@ -156,7 +165,7 @@ export class TicketValidationPipe implements PipeTransform {
       false,
     );
 
-    const seat = availableSeats.map((seat) => seat.id).includes(ticket.seat_id);
+    const seat = availableSeats.find(seat => seat.id === ticket.seat_id);
 
     if (!seat)
       throw new BadRequestException('Bad Request', {

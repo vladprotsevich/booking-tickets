@@ -1,5 +1,7 @@
-export enum PriceEnum {
-  couple = 150,
-  reserved = 75,
-  luxury = 350,
-}
+import { CarriageEnum } from './carriage.enum';
+
+export const PriceEnum: { [carriageType in CarriageEnum]: number } = {
+  [CarriageEnum.couple]: 150,
+  [CarriageEnum.reserved]: 75,
+  [CarriageEnum.luxury]: 350,
+};

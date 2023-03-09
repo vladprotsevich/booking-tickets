@@ -11,6 +11,7 @@ import { FrequencyService } from './frequency.service';
 import { SchedulesService } from './schedule.service';
 import { Train } from './models/train.model';
 import { SearchTrainSeatsQueryDTO } from './dto/search-available-seats.dto';
+import { FrequencyEnum } from '../../common/enums/frequency.enum';
 
 @Injectable()
 export class TrainService {
@@ -109,14 +110,14 @@ export class TrainService {
   }
 
   async filterTrainsByFrequencies(departureDate: string): Promise<Train[]> {
-    const { dayType, dayOfWeek } = await this.frequencyService.getDayOfWeek(
+    const { dayType, dayOfWeek } = this.frequencyService.getDayOfWeek(
       departureDate,
     );
     try {
       const trains = await this.qb()
         .distinct('trains.*')
         .innerJoin('frequencies', 'frequencies.train_id', '=', 'trains.id')
-        .whereIn('frequencies.frequency', [dayType, dayOfWeek, 'daily']);
+        .whereIn('frequencies.frequency', [dayType, dayOfWeek, FrequencyEnum.daily]);
       return trains;
     } catch (error) {
       console.log(error);
