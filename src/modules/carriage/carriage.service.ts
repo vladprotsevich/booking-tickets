@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { dbConf } from 'src/db/knexfile';
 import { CreateCarriageDTO } from './dto/create-carriage.dto';
@@ -59,7 +59,11 @@ export class CarriageService {
     return this.seatService.createSeatsCollection(amount, carriage.id, trx);
   }
 
-  async findCarriageByTrain(id: string, train_id: string) {
+  async findOneCarriageByTrain(id: string, train_id: string) {
     return this.qb().where({ id, train_id }).first();
+  }
+
+  async findCarriagesByTrain(train_id: string) {
+    return this.qb().where({ train_id });
   }
 }

@@ -7,7 +7,7 @@ import { SanitizedUser } from './models/sanitized-user.';
 
 @Injectable()
 export class UserService {
-  qb() {
+  private qb() {
     return dbConf<User>('users');
   }
 
@@ -33,8 +33,8 @@ export class UserService {
 
   async updateUser(id: string, body: UpdateUserDTO) {
     try {
-      const user = await this.qb().where({ id }).update(body);
-      return Boolean(user);
+      const affected = await this.qb().where({ id }).update(body);
+      return Boolean(affected);
     } catch (error) {
       console.log(error);
       throw new BadRequestException('Bad Request', {
@@ -43,9 +43,9 @@ export class UserService {
     }
   }
 
-  async removeUser(email: string) {
+  async removeUser(id: string) {
     try {
-      const deletedUser = await this.qb().where({ email }).del();
+      const deletedUser = await this.qb().where({ id }).del();
       return Boolean(deletedUser);
     } catch (error) {
       console.log(error);

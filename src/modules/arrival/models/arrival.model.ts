@@ -7,7 +7,7 @@ export class Arrival {
 
   order: number;
 
-  travel_time: string;
+  travel_time: number;
 
-  stop_time: string;
+  stop_time: number;
 }

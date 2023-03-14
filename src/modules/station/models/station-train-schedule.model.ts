@@ -1,11 +1,11 @@
 export class StationTrainSchedule {
   train_id: string;
 
-  startStationDeparture: string;
+  startStationDepartureTime: string;
 
-  endStationArrival: string;
+  endStationArrivalTime: string;
 
-  arrivalToCurrentStation?: string;
+  arrivalToCurrentStationTime?: string;
 
-  departureFromCurrentStation?: string;
+  departureFromCurrentStationTime?: string;
 }

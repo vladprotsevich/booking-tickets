@@ -14,18 +14,14 @@ export class AuthController {
     private readonly tokenService: TokenService,
   ) {}
 
-  @ApiCreatedResponse({
-    description: 'Registration was success',
-  })
+  @ApiCreatedResponse({ description: 'Registration was success' })
   @Post('/register')
   async register(@Body() body: CreateUserDTO) {
     await this.authService.register(body);
     return { status: HttpStatus.CREATED, message: 'Registration was success' };
   }
 
-  @ApiCreatedResponse({
-    description: 'Sing in is success',
-  })
+  @ApiCreatedResponse({ description: 'Sing in is success' })
   @Post('/login')
   async login(@Body() body: SingInDTO) {
     return this.authService.login(body);
@@ -36,6 +32,6 @@ export class AuthController {
   })
   @Post('/refresh')
   async refreshJwtToken(@Body() body: TokenDTO) {
-    return this.tokenService.refreshUsersToken(body.token);
+    return this.tokenService.refreshUserToken(body.token);
   }
 }

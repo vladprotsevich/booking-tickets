@@ -1,4 +1,4 @@
-import { CarriageEnum } from './carriage.enum';
+import { CarriageEnum } from './enums/carriage.enum';
 
 export const PriceEnum: { [carriageType in CarriageEnum]: number } = {
   [CarriageEnum.couple]: 150,

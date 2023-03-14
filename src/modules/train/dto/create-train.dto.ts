@@ -7,33 +7,33 @@ export class CreateTrainDTO {
   @ApiProperty()
   @IsUUID('4')
   @IsNotEmpty()
-  route_id: string;
+  readonly route_id: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  departure_time: string;
+  readonly departure_time: string;
 
   @ApiProperty()
   @IsUUID('4')
   @IsNotEmpty()
-  machinist_id: string;
+  readonly machinist_id: string;
 
   @ApiProperty()
   @IsUUID('4')
   @IsNotEmpty()
-  driver_assistant_id: string;
+  readonly driver_assistant_id: string;
 
   @ApiProperty()
   @IsUUID('4')
   @IsNotEmpty()
-  head_of_train_id: string;
+  readonly head_of_train_id: string;
 
   @ApiProperty({ enum: TrainEnum })
   @IsEnum(TrainEnum)
-  train_type: TrainEnum;
+  readonly train_type: TrainEnum;
 
   @ApiProperty({ enum: FrequencyEnum })
   @IsEnum(FrequencyEnum, { each: true })
-  frequencies?: FrequencyEnum[];
+  readonly frequencies?: FrequencyEnum[];
 }

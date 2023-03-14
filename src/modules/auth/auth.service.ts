@@ -16,10 +16,10 @@ export class AuthService {
     private readonly userService: UserService,
   ) {}
 
-  async register(body: CreateUserDTO): Promise<void> {
+  async register(body: CreateUserDTO) {
     const userObj = await this.userService.findOneByEmail(body.email);
     if (userObj) throw new BadRequestException();
-    body.password = await this.encryptUserPassword(body.password);
+    body.password = await this.encryptUserValue(body.password);
     await this.userService.createUser(body);
   }
 
@@ -28,7 +28,10 @@ export class AuthService {
     if (user && (await this.decryptUserPassword(body.password, user))) {
       const access_token = await this.generateAuthJwtAccessToken(user);
       const refresh_token = await this.generateAuthJwtRefreshToken(user);
-      await this.userService.updateUser(user.id, { token: refresh_token });
+      const encryptedRefreshToken = await this.encryptUserValue(refresh_token);
+      await this.userService.updateUser(user.id, {
+        token: encryptedRefreshToken,
+      });
       return {
         message: `Welcome ${user.email}`,
         access_token,
@@ -39,7 +42,7 @@ export class AuthService {
     }
   }
 
-  async encryptUserPassword(password: string) {
+  async encryptUserValue(password: string) {
     return bcrypt.hash(password, 5);
   }
 

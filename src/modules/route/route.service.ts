@@ -1,16 +1,18 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateArrivalDTO } from '../arrival/dto/arrival.create.dto';
+import { CreateArrivalDTO } from '../arrival/dto/create-arrival.dto';
 import { CreateRouteDTO } from './dto/create-route.dto';
 import { dbConf } from 'src/db/knexfile';
 import { Route } from './models/route.model';
-import { ArrivalService } from '../arrival/arrivals.service';
+import { ArrivalService } from '../arrival/arrival.service';
 import { StationService } from '../station/station.service';
+import { TrainService } from '../train/train.service';
 
 @Injectable()
 export class RouteService {
   constructor(
     private readonly arrivalService: ArrivalService,
     private readonly stationService: StationService,
+    private readonly trainService: TrainService,
   ) {}
   private qb() {
     return dbConf<Route>('routes');
@@ -38,5 +40,9 @@ export class RouteService {
 
   async routeStations(route_id: string) {
     return this.stationService.findStationsByRoute(route_id);
+  }
+
+  async findTrainsByRoute(route_id: string) {
+    return this.trainService.findByRoute(route_id);
   }
 }

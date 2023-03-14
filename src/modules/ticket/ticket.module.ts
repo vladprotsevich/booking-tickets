@@ -6,10 +6,11 @@ import { ArrivalModule } from '../arrival/arrival.module';
 import { CarriageModule } from '../carriage/carriage.module';
 import { PriceService } from './price.service';
 import { SeatModule } from '../seat/seat.module';
+import { FrequencyService } from '../train/frequency.service';
 
 @Module({
   imports: [TrainModule, ArrivalModule, CarriageModule, SeatModule],
-  providers: [PriceService, TicketService],
+  providers: [PriceService, TicketService, FrequencyService],
   controllers: [TicketController],
   exports: [TicketService],
 })

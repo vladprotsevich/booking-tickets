@@ -19,7 +19,6 @@ export class UpdateUserDTO {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
   readonly email?: string;
 
   @ApiPropertyOptional()
@@ -32,11 +31,9 @@ export class UpdateUserDTO {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(RoleEnum)
   readonly role?: RoleEnum;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
   readonly banned?: boolean;
 }

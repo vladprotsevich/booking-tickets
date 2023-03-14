@@ -8,23 +8,29 @@ import { dbConf } from 'src/db/knexfile';
 import { SeatService } from '../seat/seat.service';
 import { CreateTrainDTO } from './dto/create-train.dto';
 import { FrequencyService } from './frequency.service';
-import { SchedulesService } from './schedule.service';
+import { TrainScheduleService } from './train-schedule.service';
 import { Train } from './models/train.model';
 import { SearchTrainSeatsQueryDTO } from './dto/search-available-seats.dto';
 import { FrequencyEnum } from '../../common/enums/frequency.enum';
+import { Journey } from '../station/models/journey.model';
+import { SearchAvailableTrainsQueryDTO } from './dto/search-available-trains.dto';
 
 @Injectable()
 export class TrainService {
   constructor(
     private readonly seatService: SeatService,
     private readonly frequencyService: FrequencyService,
-    private readonly scheduleService: SchedulesService,
+    private readonly scheduleService: TrainScheduleService,
   ) {}
   private qb() {
     return dbConf<Train>('trains');
   }
 
-  async getAvailableTrains(query: SearchTrainSeatsQueryDTO) {
+  async findAll() {
+    return this.qb();
+  }
+
+  async getAvailableTrains(query: SearchAvailableTrainsQueryDTO) {
     const suitableTrains = await this.filterTrainsByFrequencies(
       query.departureDate,
     );
@@ -44,6 +50,10 @@ export class TrainService {
       });
     }
     return train;
+  }
+
+  async findByRoute(route_id: string) {
+    return this.qb().where({ route_id });
   }
 
   async getSchedule(train_id: string) {
@@ -74,8 +84,24 @@ export class TrainService {
     }
   }
 
+  async collectTrainArrivalTime(
+    initialDepartureTime: string,
+    journeyTimeCollection: Journey[],
+  ) {
+    const timeCollection: number[] = [];
+    for (const { travel_time, stop_time } of journeyTimeCollection) {
+      timeCollection.push(travel_time);
+      timeCollection.push(stop_time);
+    }
+
+    const firstDepartureTime =
+      this.scheduleService.convertTimeToMinutes(initialDepartureTime);
+
+    return { firstDepartureTime, timeCollection };
+  }
+
   async getTrainsByAvailableSeats(
-    query: SearchTrainSeatsQueryDTO,
+    query: SearchTrainSeatsQueryDTO | SearchAvailableTrainsQueryDTO,
     trains: Train[],
   ) {
     const trainIds: string[] = [];
@@ -93,12 +119,12 @@ export class TrainService {
 
   /**
    * returns the list of trains which pass via the received station
-   * @param station_id 
+   * @param station_id
    * @returns Promise<Train[]>
    */
   async getStationTrains(station_id: string): Promise<Train[]> {
     try {
-      const trains = await this.qb()
+      const trains: Train[] = await this.qb()
         .select('trains.*')
         .innerJoin('arrivals', 'arrivals.route_id', '=', 'trains.route_id')
         .where({ station_id });
@@ -110,14 +136,17 @@ export class TrainService {
   }
 
   async filterTrainsByFrequencies(departureDate: string): Promise<Train[]> {
-    const { dayType, dayOfWeek } = this.frequencyService.getDayOfWeek(
-      departureDate,
-    );
+    const { dayType, dayOfWeek } =
+      this.frequencyService.getDayOfWeek(departureDate);
     try {
       const trains = await this.qb()
         .distinct('trains.*')
         .innerJoin('frequencies', 'frequencies.train_id', '=', 'trains.id')
-        .whereIn('frequencies.frequency', [dayType, dayOfWeek, FrequencyEnum.daily]);
+        .whereIn('frequencies.frequency', [
+          dayType,
+          dayOfWeek,
+          FrequencyEnum.daily,
+        ]);
       return trains;
     } catch (error) {
       console.log(error);

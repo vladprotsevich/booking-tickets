@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
+import { PriceEnum } from 'src/common/carriage-type-price.map';
 import { CarriageEnum } from 'src/common/enums/carriage.enum';
-import { PriceEnum } from 'src/common/enums/price.enum';
 import { dbConf } from 'src/db/knexfile';
-import { ArrivalService } from '../arrival/arrivals.service';
+import { ArrivalService } from '../arrival/arrival.service';
 import { CarriageService } from '../carriage/carriage.service';
 import { TrainService } from '../train/train.service';
-import { CreatePriceDTO } from './dto/create-price.dto';
+import { CreatePriceData } from './models/price-data.model';
 import { Price } from './models/price.model';
 import { Ticket } from './models/ticket.model';
 
@@ -22,7 +22,7 @@ export class PriceService {
     return dbConf<Price>('prices');
   }
 
-  async create(body: CreatePriceDTO, trx: Knex.Transaction) {
+  async create(body: CreatePriceData, trx: Knex.Transaction) {
     try {
       const [price] = await this.qb()
         .transacting(trx)
@@ -30,8 +30,8 @@ export class PriceService {
         .returning('*');
       return price;
     } catch (error) {
-      console.log(error);
       await trx.rollback();
+      console.log(error);
       throw new BadRequestException('Bad Request', {
         description: 'Cannot create a price with invalida data',
       });
@@ -52,7 +52,7 @@ export class PriceService {
       distance,
     );
 
-    const priceObject = new CreatePriceDTO(); // COMMENTS: rename CreatePriceDTO to f.ex. CreatePriceParams
+    const priceObject = new CreatePriceData();
 
     priceObject.ticket_id = ticket.id;
     priceObject.departure_station = ticket.departure_station;
@@ -62,6 +62,10 @@ export class PriceService {
     priceObject.price = ticketPrice;
 
     return this.create(priceObject, trx);
+  }
+
+  async removePriceByTicket(ticket_id: string, trx: Knex.Transaction) {
+    return this.qb().transacting(trx).where({ ticket_id }).del();
   }
 
   async calculateDistance(

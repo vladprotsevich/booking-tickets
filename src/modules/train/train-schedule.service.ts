@@ -1,17 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { ArrivalService } from '../arrival/arrivals.service';
+import { ArrivalService } from '../arrival/arrival.service';
 import { Schedule } from './models/schedule.model';
 
 @Injectable()
-export class SchedulesService {
+export class TrainScheduleService {
   constructor(private readonly arrivalsService: ArrivalService) {}
 
   async getSchedule(route_id: string, trainDepartureTime: string) {
     const arrivals = await this.arrivalsService.getArrivalsByRoute(route_id);
     const schedule: Schedule[] = [];
 
-    let currentTime = trainDepartureTime;
-    let nextTime = '';
+    let currentTime = this.convertTimeToMinutes(trainDepartureTime);
 
     for (let i = 0; i < arrivals.length - 1; i++) {
       const departureTime = this.getTotalTravelTime([
@@ -19,43 +18,43 @@ export class SchedulesService {
         arrivals[i].stop_time,
       ]);
 
-      let arrivalTime = this.getTotalTravelTime([
+      const arrivalTime = this.getTotalTravelTime([
         currentTime,
         arrivals[i + 1].travel_time,
         arrivals[i].stop_time,
       ]);
 
-      nextTime = arrivalTime;
-
       const subRoute = new Schedule();
-      subRoute.arrivalStation = arrivals[i].station_id;
-      subRoute.departureStation = arrivals[i + 1].station_id;
+      subRoute.departureStation = arrivals[i].station_id;
+      subRoute.arrivalStation = arrivals[i + 1].station_id;
       subRoute.departureTime = departureTime;
       subRoute.arrivalTime = arrivalTime;
       schedule.push(subRoute);
+
+      const nextTime = this.convertTimeToMinutes(arrivalTime);
 
       currentTime = nextTime;
     }
     return schedule;
   }
 
-  getTotalTravelTime(times: string[]) {
-    let totalTime = 0;
-    for (const time of times) {
-      totalTime += this.convertTimeToMilliseconds(time);
-    }
-    return this.convertMillisecondsToFullTime(totalTime);
-  }
-
-  convertTimeToMilliseconds(time: string) {
-    const oneMinuteInMill = 60000;
-    const oneHourInMill = 3600000;
+  convertTimeToMinutes(time: string) {
+    const MINUTES_IN_HOUR = 60;
     const timeArray = time.split(':').map(Number);
     const timeHours = timeArray[0];
     const timeMinutes = timeArray[1];
-    const timeMilliseconds =
-      timeHours * oneHourInMill + timeMinutes * oneMinuteInMill;
-    return timeMilliseconds;
+    const totalMinutes = timeHours * MINUTES_IN_HOUR + timeMinutes;
+    return totalMinutes;
+  }
+
+  getTotalTravelTime(minutesCollection: number[]) {
+    const ONE_MIN_IN_MILL = 60000;
+    let totalTimeOfMinutes = 0;
+    for (const minute of minutesCollection) {
+      totalTimeOfMinutes += minute;
+    }
+    totalTimeOfMinutes *= ONE_MIN_IN_MILL;
+    return this.convertMillisecondsToFullTime(totalTimeOfMinutes);
   }
 
   convertMillisecondsToFullTime(millisec: number): string {

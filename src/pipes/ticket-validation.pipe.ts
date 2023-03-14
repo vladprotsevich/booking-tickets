@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ArrivalService } from 'src/modules/arrival/arrivals.service';
+import { ArrivalService } from 'src/modules/arrival/arrival.service';
 import { CarriageService } from 'src/modules/carriage/carriage.service';
 import { SeatService } from 'src/modules/seat/seat.service';
 import { Ticket } from 'src/modules/ticket/models/ticket.model';
@@ -21,7 +21,8 @@ export class TicketValidationPipe implements PipeTransform {
     @Inject(CarriageService) private readonly carriageService: CarriageService,
     @Inject(ArrivalService) private readonly arrivalService: ArrivalService,
     @Inject(SeatService) private readonly seatService: SeatService,
-    @Inject(FrequencyService) private readonly frequenciesService: FrequencyService,
+    @Inject(FrequencyService)
+    private readonly frequenciesService: FrequencyService,
   ) {}
   async transform(value: any, { metatype }: ArgumentMetadata) {
     if (!metatype || !this.toValidate(metatype)) {
@@ -77,7 +78,6 @@ export class TicketValidationPipe implements PipeTransform {
         description:
           'You cannot book a ticket later than 3 days from the train departure',
       });
-    return true;
   }
 
   private async validatePurchaseDate(train_id: string, departureDate: string) {
@@ -88,21 +88,25 @@ export class TicketValidationPipe implements PipeTransform {
       throw new BadRequestException('Bad Request', {
         description: 'Purchase date is invalid',
       });
-    return true;
   }
 
   private async validateTrainFrequencies(
     train_id: string,
     departureDate: string,
   ) {
-    const frequencies = await this.frequenciesService.findOne(train_id); // 3*n
-    const { dayOfWeek, dayType } = this.frequenciesService.getDayOfWeek(departureDate);
-    
+    const frequencies = await this.frequenciesService.findByFreqTrain(train_id);
+    const { dayOfWeek, dayType } =
+      this.frequenciesService.getDayOfWeek(departureDate);
+
     let matches = false;
-    const arr: [FrequencyEnum, FrequencyEnum, FrequencyEnum] = [FrequencyEnum.daily, dayOfWeek, dayType];
+    const freqArray: [FrequencyEnum, FrequencyEnum, FrequencyEnum] = [
+      FrequencyEnum.daily,
+      dayOfWeek,
+      dayType,
+    ];
 
     for (const { frequency } of frequencies) {
-      if (arr.includes(frequency)) {
+      if (freqArray.includes(frequency)) {
         matches = true;
         break;
       }
@@ -116,7 +120,7 @@ export class TicketValidationPipe implements PipeTransform {
   }
 
   private async validateTrainCarriage(train_id: string, carriage_id: string) {
-    const carriage = await this.carriageService.findCarriageByTrain(
+    const carriage = await this.carriageService.findOneCarriageByTrain(
       carriage_id,
       train_id,
     );
@@ -125,8 +129,6 @@ export class TicketValidationPipe implements PipeTransform {
       throw new BadRequestException('Bad Request', {
         description: 'The train doest not have this carriage',
       });
-
-    return true;
   }
 
   private async validateRouteStations(
@@ -137,8 +139,14 @@ export class TicketValidationPipe implements PipeTransform {
     const train = await this.trainService.findOne(train_id);
 
     const [departureOrder, arrivalOrder] = await Promise.all([
-      this.arrivalService.getCurrentStationOrder(train.route_id, departure_station),
-      this.arrivalService.getCurrentStationOrder(train.route_id, arrival_station),
+      this.arrivalService.getCurrentStationOrder(
+        train.route_id,
+        departure_station,
+      ),
+      this.arrivalService.getCurrentStationOrder(
+        train.route_id,
+        arrival_station,
+      ),
     ]);
 
     if (departureOrder > arrivalOrder)
@@ -146,8 +154,6 @@ export class TicketValidationPipe implements PipeTransform {
         description:
           'The departure or arrival doenst correspond to the train route',
       });
-
-    return true; // COMMENT: why do we need to return anything?
   }
 
   async validateSeatAvailability(ticket: Ticket) {
@@ -165,13 +171,11 @@ export class TicketValidationPipe implements PipeTransform {
       false,
     );
 
-    const seat = availableSeats.find(seat => seat.id === ticket.seat_id);
+    const seat = availableSeats.find((seat) => seat.id === ticket.seat_id);
 
     if (!seat)
       throw new BadRequestException('Bad Request', {
         description: 'The input seat is occupied to this train',
       });
-
-    return true;
   }
 }

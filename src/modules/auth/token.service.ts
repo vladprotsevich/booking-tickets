@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { User } from '../user/models/user.model';
 import { UserPayload } from '../user/models/user-payload.model';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class TokenService {
@@ -14,21 +15,26 @@ export class TokenService {
   ) {}
 
   async generateJwtToken(user: User, tokenType: string, expHours: string) {
-    const payload: UserPayload = { user_email: user.email, user_id: undefined };
+    const payload = new UserPayload();
+    payload.user_email = user.email;
     if (tokenType === 'access_token') {
       payload.user_id = user.id;
     }
     const jwt_secret_key = this.configService.get<string>(tokenType + '_key');
-    return this.jwtService.sign(payload, {
-      secret: jwt_secret_key,
-      expiresIn: expHours,
-    });
+    return this.jwtService.sign(
+      { ...payload },
+      {
+        secret: jwt_secret_key,
+        expiresIn: expHours,
+      },
+    );
   }
 
-  async refreshUsersToken(refresh_token: string) {
+  async refreshUserToken(refresh_token: string) {
     const user_info = await this.parseJWTToken(refresh_token);
     const user = await this.userService.findOneByEmail(user_info.user_email);
-    if (user && user.token === refresh_token) {
+    const validRefreshToken = await this.decryptUserToken(refresh_token, user);
+    if (user && validRefreshToken) {
       const access_token = await this.generateJwtToken(
         user,
         'access_token',
@@ -37,6 +43,17 @@ export class TokenService {
       return { access_token };
     } else {
       throw new BadRequestException();
+    }
+  }
+
+  async decryptUserToken(token: string, user: User) {
+    try {
+      return bcrypt.compare(token, user.token);
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Bad Request', {
+        description: 'Incorrect token',
+      });
     }
   }
 

@@ -24,7 +24,7 @@ export class CreateCarriageDTO {
   @IsUUID('4')
   readonly second_conductor_id: string;
 
-  @ApiProperty()
+  @ApiProperty({ enum: CarriageEnum })
   @IsEnum(CarriageEnum)
   @IsNotEmpty()
   readonly carriage_type: CarriageEnum;

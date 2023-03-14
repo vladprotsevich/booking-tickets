@@ -4,20 +4,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { dbConf } from 'src/db/knexfile';
-import { ArrivalService } from '../arrival/arrivals.service';
-import { SchedulesService } from '../train/schedule.service';
+import { ArrivalService } from '../arrival/arrival.service';
+import { TrainScheduleService } from '../train/train-schedule.service';
 import { TrainService } from '../train/train.service';
 import { CreateStationDTO } from './dto/create-station.dto';
-import { Journey } from './models/journey.model';
 import { UpdateStationDTO } from './dto/update-station.dto';
-import { DepartureObj } from './models/departure.model';
+import { DepartureData } from './models/departure.model';
 import { StationTrainSchedule } from './models/station-train-schedule.model';
 import { Station } from './models/station.model';
 
 @Injectable()
 export class StationService {
   constructor(
-    private readonly scheduleService: SchedulesService,
+    private readonly scheduleService: TrainScheduleService,
     private readonly trainService: TrainService,
     private readonly arrivalsService: ArrivalService,
   ) {}
@@ -56,10 +55,11 @@ export class StationService {
 
   async findStationsByRoute(route_id: string) {
     try {
-      const routeStations: { id: string, name: string, order: number }[] = await this.qb()
-        .select('stations.id', 'stations.name', 'arrivals.order') // COMMENT: arrivals.order - do we need it? maybe .orderBy('arrivals.order');
+      const routeStations: Station[] = await this.qb()
+        .select('stations.*')
         .innerJoin('arrivals', 'arrivals.station_id', '=', 'stations.id')
-        .where({ route_id });
+        .where({ route_id })
+        .orderBy('arrivals.order');
       return routeStations;
     } catch (error) {
       console.log(error);
@@ -73,22 +73,29 @@ export class StationService {
     const trains = await this.trainService.getStationTrains(station_id);
     const schedule: StationTrainSchedule[] = [];
     for (const train of trains) {
-      const args: DepartureObj = {
+      const args: DepartureData = {
         firstDepartureStationTime: train.departure_time,
         route_id: train.route_id,
         station_id,
       };
       const lastStationArrivalTime = await this.getLastStationTime(args);
-      const currentStationArrivalTime = await this.getCurrentStationTime(args);
-      const currentStationDepartureTime = await this.getDepartureFromCurrentStationTime(args);
+      const currentStationArrivalTime = await this.getStationTime(
+        args,
+        'current_arrival',
+      );
+      const currentStationDepartureTime = await this.getStationTime(
+        args,
+        'current_departure',
+      );
 
       const stationTrainSchedule = new StationTrainSchedule();
 
       stationTrainSchedule.train_id = train.id;
-      stationTrainSchedule.startStationDeparture = train.departure_time;
-      stationTrainSchedule.endStationArrival = lastStationArrivalTime;
-      stationTrainSchedule.arrivalToCurrentStation = currentStationArrivalTime;
-      stationTrainSchedule.departureFromCurrentStation =
+      stationTrainSchedule.startStationDepartureTime = train.departure_time;
+      stationTrainSchedule.endStationArrivalTime = lastStationArrivalTime;
+      stationTrainSchedule.arrivalToCurrentStationTime =
+        currentStationArrivalTime;
+      stationTrainSchedule.departureFromCurrentStationTime =
         currentStationDepartureTime;
 
       const sanitizeStationdScheduleObj = await this.sanitizeSchedule(
@@ -99,78 +106,62 @@ export class StationService {
     return schedule;
   }
 
-  async getLastStationTime(args: DepartureObj) {
+  async getLastStationTime(args: DepartureData) {
     const lastArrivalOrder = await this.arrivalsService.getLastStationOrder(
       args.route_id,
     );
-    const journeyTimeCollection =
-      await this.arrivalsService.getJourneyCollectionByRoute(
-        args.route_id,
-        lastArrivalOrder,
-      );
-    return this.calculateArrivalTime(
-      args.firstDepartureStationTime,
-      journeyTimeCollection,
-    );
+    return this.buildStationTime(lastArrivalOrder, args, true);
   }
 
-  async getCurrentStationTime(args: DepartureObj) {
-    const currenArrivalOrder =
-      await this.arrivalsService.getCurrentStationOrder(
-        args.route_id,
-        args.station_id,
-      );
-    const journeyTimeCollection =
-      await this.arrivalsService.getJourneyCollectionByRoute(
-        args.route_id,
-        currenArrivalOrder,
-      );
-    journeyTimeCollection[journeyTimeCollection.length - 1].stop_time =
-      '00:00:00';
-    return this.calculateArrivalTime(
-      args.firstDepartureStationTime,
-      journeyTimeCollection,
-    );
-  }
-
-  async getDepartureFromCurrentStationTime(args: DepartureObj) {
-    const currenArrivalOrder =
-      await this.arrivalsService.getCurrentStationOrder(
-        args.route_id,
-        args.station_id,
-      );
-    const journeyTimeCollection =
-      await this.arrivalsService.getJourneyCollectionByRoute(
-        args.route_id,
-        currenArrivalOrder,
-      );
-    return this.calculateArrivalTime(
-      args.firstDepartureStationTime,
-      journeyTimeCollection,
-    );
-  }
-
-  async calculateArrivalTime(
-    initialDepartureTime: string,
-    journeyTimeCollection: Journey[],
+  async getStationTime(
+    args: DepartureData,
+    type: 'current_arrival' | 'current_departure',
   ) {
-    const timeCollection = []
-    for (const { travel_time, stop_time } of journeyTimeCollection) {
-      timeCollection.push(travel_time);
-      timeCollection.push(stop_time);
-    }
+    const currenArrivalOrder =
+      await this.arrivalsService.getCurrentStationOrder(
+        args.route_id,
+        args.station_id,
+      );
+    const stationType = type === 'current_arrival' ? true : false;
+    return this.buildStationTime(currenArrivalOrder, args, stationType);
+  }
 
+  async buildStationTime(
+    order: number,
+    args: DepartureData,
+    removeLastStopTime: boolean,
+  ) {
+    const journeyTimeCollection =
+      await this.arrivalsService.getJourneyCollectionByRoute(
+        args.route_id,
+        order,
+      );
+
+    if (removeLastStopTime)
+      journeyTimeCollection[journeyTimeCollection.length - 1].stop_time = 0;
+
+    const { firstDepartureTime, timeCollection } =
+      await this.trainService.collectTrainArrivalTime(
+        args.firstDepartureStationTime,
+        journeyTimeCollection,
+      );
     return this.scheduleService.getTotalTravelTime([
-      initialDepartureTime,
+      firstDepartureTime,
       ...timeCollection,
     ]);
   }
 
   async sanitizeSchedule(schedule: StationTrainSchedule) {
-    if (schedule.departureFromCurrentStation === schedule.endStationArrival) // COMMENT: station? or type?
-      delete schedule.departureFromCurrentStation;
-    if (schedule.startStationDeparture === schedule.departureFromCurrentStation)
-      delete schedule.arrivalToCurrentStation;
+    if (
+      schedule.departureFromCurrentStationTime ===
+      schedule.endStationArrivalTime
+    )
+      delete schedule.departureFromCurrentStationTime;
+    if (
+      schedule.startStationDepartureTime ===
+      schedule.departureFromCurrentStationTime
+    )
+      delete schedule.arrivalToCurrentStationTime;
 
     return schedule;
   }

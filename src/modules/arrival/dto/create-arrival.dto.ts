@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsUUID } from 'class-validator';
 
 export class CreateArrivalDTO {
   @ApiProperty()
@@ -15,11 +15,13 @@ export class CreateArrivalDTO {
 
   @ApiProperty()
   @IsNotEmpty()
-  readonly travel_time: string;
+  @Type(() => Number)
+  readonly travel_time: number;
 
   @ApiProperty()
   @IsNotEmpty()
-  readonly stop_time: string;
+  @Type(() => Number)
+  readonly stop_time: number;
 
   @ApiProperty()
   @IsNotEmpty()

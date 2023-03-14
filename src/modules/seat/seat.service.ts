@@ -1,17 +1,16 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Knex } from 'knex';
 import { dbConf } from 'src/db/knexfile';
-import { ArrivalService } from '../arrival/arrivals.service';
+import { ArrivalService } from '../arrival/arrival.service';
 import { CreateSeatDTO } from './dto/create-seat.dto';
 import { Seat } from './models/seat.model';
 import { SearchOccupiedSeats } from './models/search-occupied-seats';
 import { SearchTrainSeatsQueryDTO } from '../train/dto/search-available-seats.dto';
+import { SearchAvailableTrainsQueryDTO } from '../train/dto/search-available-trains.dto';
 
 @Injectable()
 export class SeatService {
@@ -19,10 +18,6 @@ export class SeatService {
 
   private qb() {
     return dbConf<Seat>('seats');
-  }
-
-  async findOne(id: string) {
-    return this.qb().where({ id }).first();
   }
 
   async create(body: CreateSeatDTO, trx: Knex.Transaction) {
@@ -53,7 +48,7 @@ export class SeatService {
   }
 
   async findAvailableSeats(
-    query: SearchTrainSeatsQueryDTO,
+    query: SearchTrainSeatsQueryDTO | SearchAvailableTrainsQueryDTO,
     route_id: string,
     limit: boolean,
   ) {
@@ -76,13 +71,13 @@ export class SeatService {
     return this.getAvailableSeats(query.train_id, occupiedSeats, limit);
   }
 
-  async getUnAvailableSeats(args: SearchOccupiedSeats): Promise<Seat[]> {
+  async getUnAvailableSeats(args: SearchOccupiedSeats) {
     const [departureStations, arrivalStations] = await Promise.all([
       this.arrivalService.findArrivalStations(args, args.arrivalOrder, true),
       this.arrivalService.findArrivalStations(args, args.departureOrder, false),
     ]);
     try {
-      const occupiedSeats = await this.qb()
+      const occupiedSeats: Pick<Seat, 'id'>[] = await this.qb()
         .distinct('seats.id')
         .innerJoin('tickets', 'tickets.seat_id', '=', 'seats.id')
         .where({ departure_date: args.departure_date })
@@ -100,18 +95,17 @@ export class SeatService {
 
   async getAvailableSeats(
     train_id: string,
-    unAvailableSeats: Seat[],
+    unAvailableSeats: Pick<Seat, 'id'>[],
     limit: boolean,
-  ): Promise<Seat[]> {
+  ) {
     const occupiedSeats = unAvailableSeats.map((seat) => seat.id);
     try {
       const query = this.qb();
       limit ? query.distinct('train_id') : query.select('seats.*');
-      query
+      const seats: Seat[] = await query
         .innerJoin('carriages', 'carriages.id', '=', 'seats.carriage_id')
         .where('carriages.train_id', train_id)
         .whereNotIn('seats.id', occupiedSeats);
-      const seats = await query;
       return seats;
     } catch (error) {
       console.log(error);

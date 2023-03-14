@@ -1,4 +1,4 @@
-export class DepartureObj { // COMNENT: rename to DepartureData?
+export class DepartureData {
   firstDepartureStationTime: string;
 
   route_id: string;

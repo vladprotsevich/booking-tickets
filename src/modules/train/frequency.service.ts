@@ -11,8 +11,8 @@ export class FrequencyService {
     return dbConf<Frequency>('frequencies');
   }
 
-  async findOne(train_id: string) {
-    return this.qb().where({ train_id }); // return this.qb().where({ frequency }).first();
+  async findByFreqTrain(train_id: string) {
+    return this.qb().where({ train_id });
   }
 
   getDayOfWeek(inputDate: string) {

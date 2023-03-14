@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsUUID } from 'class-validator';
 
-export class SearchTrainSeatsQueryDTO {
+export class SearchAvailableTrainsQueryDTO {
   @ApiProperty()
   @IsNotEmpty()
   @IsUUID('4')
@@ -16,8 +16,5 @@ export class SearchTrainSeatsQueryDTO {
   @IsNotEmpty()
   readonly departureDate: string;
 
-  @ApiPropertyOptional()
-  @IsNotEmpty()
-  @IsUUID('4')
-  public train_id: string;
+  public train_id?: string;
 }
