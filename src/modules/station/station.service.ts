@@ -81,11 +81,11 @@ export class StationService {
       const lastStationArrivalTime = await this.getLastStationTime(args);
       const currentStationArrivalTime = await this.getStationTime(
         args,
-        'current_arrival',
+        true, // 'current_arrival',
       );
       const currentStationDepartureTime = await this.getStationTime(
         args,
-        'current_departure',
+        false, // 'current_departure',
       );
 
       const stationTrainSchedule = new StationTrainSchedule();
@@ -115,21 +115,20 @@ export class StationService {
 
   async getStationTime(
     args: DepartureData,
-    type: 'current_arrival' | 'current_departure',
+    isArrival: boolean,
   ) {
     const currenArrivalOrder =
       await this.arrivalsService.getCurrentStationOrder(
         args.route_id,
         args.station_id,
       );
-    const stationType = type === 'current_arrival' ? true : false;
-    return this.buildStationTime(currenArrivalOrder, args, stationType);
+    return this.buildStationTime(currenArrivalOrder, args, isArrival);
   }
 
   async buildStationTime(
     order: number,
     args: DepartureData,
-    removeLastStopTime: boolean,
+    isArrival: boolean,
   ) {
     const journeyTimeCollection =
       await this.arrivalsService.getJourneyCollectionByRoute(
@@ -137,7 +136,7 @@ export class StationService {
         order,
       );
 
-    if (removeLastStopTime)
+    if (isArrival)
       journeyTimeCollection[journeyTimeCollection.length - 1].stop_time = 0;
 
     const { firstDepartureTime, timeCollection } =

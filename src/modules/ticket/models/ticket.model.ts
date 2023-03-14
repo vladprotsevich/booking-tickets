@@ -27,13 +27,13 @@ export class Ticket {
 
   arrival_station: string;
 
-  departure_time: Date;
-
-  arrival_time: Date;
-
   status: TicketStatusEnum;
 
   purchased_at: string;
+}
 
-  price?: number;
+export class CreateTicketResult extends Ticket {
+  departure_time: Date;
+  arrival_time: Date;
+  price: number;
 }

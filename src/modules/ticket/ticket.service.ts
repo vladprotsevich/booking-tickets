@@ -12,7 +12,7 @@ import { SanitizedUser } from '../user/models/sanitized-user.';
 import { BookTicketDTO } from './dto/book-ticket.dto';
 import { BuyTicketDTO } from './dto/buy-ticket.dto';
 import { SearchTicketsQueryDTO } from './dto/search-tickets-query.dto';
-import { Ticket } from './models/ticket.model';
+import { CreateTicketResult, Ticket } from './models/ticket.model';
 import { PriceService } from './price.service';
 
 @Injectable()
@@ -72,7 +72,7 @@ export class TicketService {
     body: BuyTicketDTO,
     user_id: string,
     status: TicketStatusEnum,
-  ) {
+  ): Promise<CreateTicketResult> {
     const ticket = this.initializeTicket(body, user_id, status);
     const trx = await dbConf.transaction();
     try {
@@ -84,11 +84,17 @@ export class TicketService {
       const { departureDateTime, arrivalDateTime } = await this.getTicketTime(
         ticket,
       );
-      ticket.departure_time = departureDateTime;
-      ticket.arrival_time = arrivalDateTime;
-      ticket.price = ticketPrice.price;
+      /* if any of await on line 84 fails and we commit transaction before line 84 =>
+        trx.rollback in catch will be called anyway
+        (it will not actually do a rollback but can be called on a potentially empty object) 
+      */
       await trx.commit();
-      return ticket;
+      return {
+        ...ticket,
+        departure_time: departureDateTime,
+        arrival_time: arrivalDateTime,
+        price: ticketPrice.price,
+      };
     } catch (error) {
       await trx.rollback();
       console.log(error);
@@ -105,13 +111,16 @@ export class TicketService {
     >,
   ) {
     const { departure_date } = ticket;
-    const departure_time = await this.calculateTicketTime(
+    const train = await this.trainService.findOne(ticket.train_id);
+    const departure_time = await this.calculateTicketTime( // COMMENTS: Promise.all
       ticket.departure_station,
-      ticket.train_id,
+      train.route_id,
+      train.departure_time,
     );
     const arrival_time = await this.calculateTicketTime(
       ticket.arrival_station,
-      ticket.train_id,
+      train.route_id,
+      train.departure_time,
     );
 
     const departureDateTime = new Date(`${departure_date} ${departure_time}`);
@@ -126,20 +135,19 @@ export class TicketService {
     return { departureDateTime, arrivalDateTime };
   }
 
-  async calculateTicketTime(station_id: string, train_id: string) {
-    const train = await this.trainService.findOne(train_id);
+  async calculateTicketTime(station_id: string, route_id: string, departure_time: string) {
     const station_order = await this.arrivalService.getCurrentStationOrder(
-      train.route_id,
+      route_id,
       station_id,
     );
     const journeyCollection =
       await this.arrivalService.getJourneyCollectionByRoute(
-        train.route_id,
+        route_id,
         station_order,
       );
     const { firstDepartureTime, timeCollection } =
       await this.trainService.collectTrainArrivalTime(
-        train.departure_time,
+        departure_time,
         journeyCollection,
       );
     return this.trainScheduleService.getTotalTravelTime([

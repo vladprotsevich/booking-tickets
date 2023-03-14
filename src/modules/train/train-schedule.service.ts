@@ -40,15 +40,12 @@ export class TrainScheduleService {
 
   convertTimeToMinutes(time: string) {
     const MINUTES_IN_HOUR = 60;
-    const timeArray = time.split(':').map(Number);
-    const timeHours = timeArray[0];
-    const timeMinutes = timeArray[1];
-    const totalMinutes = timeHours * MINUTES_IN_HOUR + timeMinutes;
-    return totalMinutes;
+    const [timeHours, timeMinutes] = time.split(':').map(Number);
+    return timeHours * MINUTES_IN_HOUR + timeMinutes;
   }
 
   getTotalTravelTime(minutesCollection: number[]) {
-    const ONE_MIN_IN_MILL = 60000;
+    const ONE_MIN_IN_MILL = 60 * 1000;
     let totalTimeOfMinutes = 0;
     for (const minute of minutesCollection) {
       totalTimeOfMinutes += minute;
